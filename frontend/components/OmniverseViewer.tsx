@@ -373,7 +373,13 @@ export function OmniverseViewer({
               /{commandResult.command.playback}
             </span>{" "}
             {commandResult.accepted ? "passed the server allow-list" : "was rejected"}
-            {commandResult.delivered ? " and was sent to Kit." : "; not delivered. "}
+            {/* `delivered` only means the browser's send resolved. Without a
+                live stream there is no data channel for Kit to read it from. */}
+            {commandResult.delivered && connected
+              ? " and was sent over the stream's data channel."
+              : commandResult.delivered
+                ? "; the stream is not live, so Kit did not receive it. "
+                : "; not delivered. "}
             {commandResult.reason}
           </p>
         ) : null}
