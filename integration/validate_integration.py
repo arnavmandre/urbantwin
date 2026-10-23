@@ -24,12 +24,13 @@ AFTER = ROOT / "data" / "simulation_after.json"
 STAGE = HERE / "runtime" / "scene" / "main.usda"
 REGISTRY = ROOT / "phase2" / "scene" / "edge_registry.json"
 
-# Keep in sync with integration/export_snapshot.py INTERVENTION_TYPES:
-# only mapped kinds become drawn snapshot proposals.
-DRAWABLE_INTERVENTION_KEYS = {
-    "shade_boost",
-    "route_capacity_boost",
-}
+sys.path.insert(0, str(HERE))
+from export_snapshot import INTERVENTION_TYPES  # noqa: E402
+
+# Mapped kinds become drawn snapshot proposals; known-but-unmapped kinds
+# (drainage_boost) are metrics only. Anything else is an unknown key.
+DRAWABLE_INTERVENTION_KEYS = {k for k, v in INTERVENTION_TYPES.items() if v}
+METRICS_ONLY_INTERVENTION_KEYS = {k for k, v in INTERVENTION_TYPES.items() if not v}
 
 results = []
 
@@ -143,17 +144,16 @@ def main() -> None:
     if after:
         applied = report.get("intervention", {}) or {}
         recommendations = report.get("advisor", {}).get("recommendations", [])
-        drawable = {
-            key: amount
-            for key, amount in applied.items()
-            if key in DRAWABLE_INTERVENTION_KEYS
-        }
         calm_control = (
             "no_major_intervention" in recommendations
             and not applied
             and not after["interventions"]
         )
-        metrics_only = bool(applied) and not drawable and not after["interventions"]
+        metrics_only = (
+            bool(applied)
+            and set(applied) <= METRICS_ONLY_INTERVENTION_KEYS
+            and not after["interventions"]
+        )
         ok6 = calm_control or metrics_only or (
             bool(after["interventions"])
             and all(i["target"] in known for i in after["interventions"])
@@ -193,7 +193,6 @@ def main() -> None:
     # Test 7 above only proves each point is near SOME segment of its own
     # route, which stays true even when the traversal order is nonsense. These
     # three catch ordering, which test 7 cannot.
-    sys.path.insert(0, str(HERE))
     from export_snapshot import oriented_route_points  # noqa: E402
 
     worst_join = 0.0

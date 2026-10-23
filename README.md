@@ -111,7 +111,7 @@ Without `URBANTWIN_API_BASE`, the UI replays fixtures and must not be presented 
 | --- | --- |
 | Scenario sliders | Accepted ranges (e.g. temperature **-10…45 °C**). Values outside the range are refused before a run starts. |
 | Run simulation | Queues one Phase 11 pipeline job (single worker). Limited animation frames are used for faster demos. |
-| Before / After | Metrics and viewport state for baseline vs intervention arm when interventions were applied. |
+| Before / After | Metrics compare the baseline and intervention arms of the run. In the 3D viewport it switches the packaged Phase 8 `demoState` variant (Stressed vs Intervention): a stress-versus-proposal comparison, fixed and not regenerated per run - **not** a measured improvement. |
 | Overlay | **Behavior** (agents + routes), **Routes only**, **Shade canopy** (Phase 8 ADD_SHADE proposal), **City only**. |
 | Animation | Play / Pause / Restart on the Kit timeline (needs Live stream). |
 | Advisor | Threshold recommendations from the simulator; optional RAG ranking if configured. |
@@ -133,7 +133,7 @@ Scenario sliders do **not** live-update the USD stage — they apply on the next
 | 14 | Browser WebRTC client (`@nvidia/ov-web-rtc`) + stream TCP probe. |
 | 15 | Allow-listed view commands → WebRTC → Kit `urbantwin.view_commands` (camera, overlay, before/after, playback). |
 | 16 | Constrained explain endpoint (deterministic by default). |
-| 17 | Demo launcher + runbook (`Start-Argus.bat`, `tools/demo_launch.ps1`, `docs/DEMO_RUNBOOK.md`). |
+| 17 | Runbook (`docs/DEMO_RUNBOOK.md`) + optional launcher (`Start-Argus.bat`, `tools/demo_launch.ps1`). |
 | RAG | Optional grounded advisor over completed runs (`docs/RAG_URBAN_ADVISOR.md`). |
 
 ### Simulator advisor (no LLM required)
@@ -145,7 +145,7 @@ After the **before** arm, `urban_advisor()` in `Simulation/main.py` applies fixe
 - crowding ≥ 55 → `alternative_pedestrian_routes`
 - else → `no_major_intervention`
 
-Those IDs map to `shade_boost` / `drainage_boost` / `route_capacity_boost` for the **after** re-sim. Shade becomes a drawn cyan canopy in USD; drainage is metrics-only today (no separate USD type).
+Those IDs map to `shade_boost` / `drainage_boost` / `route_capacity_boost` for the **after** re-sim. Shade is exported as an `ADD_SHADE` proposal in the run's snapshot and its pipeline USD (`integration/runtime/scene/`); drainage is metrics-only today (no separate USD type). The cyan canopy in the streamed Kit view is the packaged Phase 8 Intervention variant, not the per-run proposal.
 
 ---
 
@@ -201,17 +201,17 @@ Health, stream config, short live run, view allow-list, optional explain.
 
 ### Manual streaming check
 
-1. Launch with `Start-Argus.bat`.
+1. Start API, Kit and frontend with the manual steps above (`Start-Argus.bat` is optional).
 2. Header: **Live backend**; `/api/stream/config` → `available` when Kit is up.
 3. Viewport chip: **Live** (not only “stream online” in the header).
 4. Change Camera / Overlay / Play–Pause; Kit should respond when WebRTC is connected.
-5. Extreme heat scenario → Run → metrics update; **Shade canopy** overlay shows the ADD_SHADE proposal when Intervention state is available.
+5. Extreme heat scenario → Run → metrics update; **Shade canopy** overlay switches the viewport to the packaged Phase 8 Intervention variant (it forces Intervention even if State says Before); it does not reflect this run's proposal.
 
 ---
 
 ## Integrity notes (do not over-claim)
 
-- Building heights: only a subset come from real OSM; the rest are inferred — do not call the skyline fully surveyed.
+- Building heights: only 223 of 623 come from real OSM (`urbantwin:heightSource`); the rest are inferred from class or neighbours — do not call the skyline surveyed.
 - Default small `city.json` is abstract; use `city_osm.json` when geography matters.
 - Agent motion between frames is interpolated for display; edge colours are equilibrium — not a continuously evolving physics sim.
 - Omniverse stream stays offline until Kit signaling is actually listening; mocks must not be presented as live.

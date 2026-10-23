@@ -15,7 +15,7 @@ How a scenario becomes metrics, USD, and (optionally) a live Omniverse stream.
 3. **Simulator runs “before”** — synthetic citizens pick routes on the real OSM city under that weather and crowding.
 4. **Built-in advisor scores stress** — if heat / rain / crowding cross fixed thresholds, it suggests shade, drainage, or extra pedestrian capacity (no LLM required).
 5. **Optional “after” re-sim** — applies those interventions and compares before vs after metrics.
-6. **Export to the 3D twin** — report → canonical snapshots → USD agents, routes, and the shade canopy proposal.
+6. **Export to the 3D twin** — report → canonical snapshots → USD agents and routes; a shade intervention becomes an `ADD_SHADE` proposal in the pipeline USD. The canopy seen in the streamed view is the packaged Phase 8 Intervention variant, not regenerated per run.
 7. **Dashboard shows impact** — headline metrics, problem areas, recommendations.
 8. **Optional live 3D** — Kit streams the RTX view into the browser; camera / overlay / play-pause are allow-listed then sent to Kit.
 9. **Optional RAG advisor** — ranks grounded suggestions among the same executable actions; the simulator advisor stays the authority for what actually runs.
@@ -83,7 +83,7 @@ flowchart TB
     StreamKit["urbantwin_streaming.kit<br/>--no-window · ports 49100 / media"]
     Autoload["urbantwin.stage_autoload<br/>opens phase9/scene/main.usda"]
     ViewCmd["urbantwin.view_commands<br/>camera · overlay · demoState · timeline"]
-    Stage["OpenUSD stage<br/>city · agents · routes · ADD_SHADE canopy"]
+    Stage["OpenUSD stage<br/>city · agents · Phase 8 demoState variant"]
     RTX["RTX render → WebRTC"]
   end
 
@@ -106,9 +106,9 @@ flowchart TB
 
   StreamCfg -->|"signaling available?"| WebRTC
   WebRTC <-->|"WebRTC A/V + data channel"| StreamKit
-  Controls --> WebRTC
-  WebRTC -->|"sendMessage urbantwin.view_command<br/>after allow-list"| View
-  View -.->|"accepted; client delivers"| WebRTC
+  Controls -->|"view command"| View
+  View -->|"accepted by allow-list"| WebRTC
+  WebRTC -->|"sendMessage urbantwin.view_command<br/>delivered = send resolved, not applied"| ViewCmd
 
   Runs --> RM
   RM --> Pipeline
@@ -129,7 +129,8 @@ flowchart TB
   Advisor -.->|"fallback / authority"| Advise
 
   Autoload --> Stage
-  USD --> Stage
+  USD -->|"publishes generated/agents.usda (before arm only)"| Phase9
+  Phase9 --> Stage
   ViewCmd --> Stage
   StreamKit --> Autoload
   StreamKit --> ViewCmd

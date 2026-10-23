@@ -15,28 +15,62 @@ function Get-ArgusRoot {
     return (Resolve-Path (Join-Path $ScriptRoot "..")).Path
 }
 
-function Stop-ListenersOnPort {
+# -Force only stops processes this demo would have started. Each port lists
+# the process name and a command-line fragment its owner must match; anything
+# else (another dev server, the desktop Omniverse editor) is left alone.
+$DemoOwners = @{
+    8000  = @{ Name = "python"; CommandLike = "*-m api*" }
+    3000  = @{ Name = "node";   CommandLike = "*next*" }
+    3001  = @{ Name = "node";   CommandLike = "*next*" }
+    49100 = @{ Name = "kit";    CommandLike = "*urbantwin_streaming*" }
+    47998 = @{ Name = "kit";    CommandLike = "*urbantwin_streaming*" }
+}
+
+function Get-ProcessInfo {
+    param([int]$ProcessId)
+    return Get-CimInstance Win32_Process -Filter "ProcessId=$ProcessId" -ErrorAction SilentlyContinue
+}
+
+function Test-ProcessMatches {
+    param($Info, [string]$Name, [string]$CommandLike)
+    if (-not $Info) { return $false }
+    $procName = [System.IO.Path]::GetFileNameWithoutExtension($Info.Name)
+    return ($procName -like "$Name*") -and ([string]$Info.CommandLine -like $CommandLike)
+}
+
+function Get-PortListenerIds {
     param([int]$Port)
     $conns = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
-    foreach ($c in $conns) {
-        $procId = $c.OwningProcess
-        if ($procId -and $procId -ne 0) {
-            Write-Host ("  Stopping PID {0} listening on port {1}" -f $procId, $Port)
+    return @($conns | ForEach-Object { $_.OwningProcess } | Where-Object { $_ } | Sort-Object -Unique)
+}
+
+function Stop-ListenersOnPort {
+    param([int]$Port)
+    $owner = $DemoOwners[$Port]
+    foreach ($procId in Get-PortListenerIds -Port $Port) {
+        $info = Get-ProcessInfo -ProcessId $procId
+        if (Test-ProcessMatches -Info $info -Name $owner.Name -CommandLike $owner.CommandLike) {
+            Write-Host ("  Stopping PID {0} ({1}) listening on port {2}" -f $procId, $info.Name, $Port)
             Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+        } else {
+            $label = if ($info) { $info.Name } else { "unknown" }
+            Write-Warning ("Port {0} is held by PID {1} ({2}), not a demo process - leaving it running." -f $Port, $procId, $label)
         }
     }
 }
 
 function Stop-KitProcesses {
-    Get-Process -Name kit -ErrorAction SilentlyContinue | ForEach-Object {
-        Write-Host ("  Stopping Kit PID {0}" -f $_.Id)
-        Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
-        try { & taskkill.exe /F /PID $_.Id 2>$null | Out-Null } catch { }
-    }
+    # Only the headless streaming Kit; a desktop editor session may have unsaved work.
+    Get-CimInstance Win32_Process -Filter "Name='kit.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { [string]$_.CommandLine -like "*urbantwin_streaming*" } |
+        ForEach-Object {
+            Write-Host ("  Stopping streaming Kit PID {0}" -f $_.ProcessId)
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+        }
 }
 
 function Stop-EverythingForDemo {
-    Write-Host "Force: stopping Kit and listeners on 8000 / 3000 / 3001 / 49100 / 47998..."
+    Write-Host "Force: stopping demo processes on 8000 / 3000 / 3001 / 49100 / 47998..."
     Stop-KitProcesses
     foreach ($port in 8000, 3000, 3001, 49100, 47998) {
         Stop-ListenersOnPort -Port $port
@@ -95,20 +129,24 @@ function Start-DemoWindow {
         [string]$Title,
         [string]$ScriptPath
     )
-    $argList = "-NoExit -ExecutionPolicy Bypass -File `"$ScriptPath`""
+    $argList = "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
     Start-Process -FilePath "powershell.exe" -ArgumentList $argList | Out-Null
     Write-Host ("Started: {0}" -f $Title)
 }
 
 function Resolve-DashboardUrl {
-    param([int]$PreferPort = 3000)
-    foreach ($port in @($PreferPort, 3001, 3002)) {
-        $conns = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
-        if ($conns) {
-            return "http://127.0.0.1:$port"
+    # Next falls back to 3001/3002 when 3000 is taken, so only accept a port
+    # whose listener is a Next process started from this repo's frontend.
+    param([string]$FrontendDir)
+    foreach ($port in 3000, 3001, 3002) {
+        foreach ($procId in Get-PortListenerIds -Port $port) {
+            $info = Get-ProcessInfo -ProcessId $procId
+            if (Test-ProcessMatches -Info $info -Name "node" -CommandLike ("*{0}*" -f $FrontendDir)) {
+                return "http://127.0.0.1:$port"
+            }
         }
     }
-    return "http://127.0.0.1:$PreferPort"
+    return $null
 }
 
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -154,7 +192,8 @@ if ($Force) {
     if ($existingKit -or $sigBusy) {
         Write-Warning "Kit or port 49100 is already in use."
         Write-Warning "That usually breaks WebRTC with: Failed to start the primary stream server."
-        Write-Warning "Re-run with: Start-Argus.bat -Force"
+        Write-Warning "Re-run with: Start-Argus.bat -Force (stops only the streaming Kit and"
+        Write-Warning "demo API/Next processes; a desktop Omniverse editor must be closed by hand)."
         Write-Host ""
     }
 }
@@ -168,7 +207,8 @@ $apiLines | Set-Content -LiteralPath $ApiScript -Encoding ASCII
 
 Start-DemoWindow -Title "Python API (:8000)" -ScriptPath $ApiScript
 
-if (Test-Path -LiteralPath $KitBat) {
+$kitStarted = Test-Path -LiteralPath $KitBat
+if ($kitStarted) {
     # Keep a visible console (/k style via -NoExit). Old Start-Process cmd /c
     # flashed closed, so Kit looked like it never started even when it did.
     $kitLines = @(
@@ -209,8 +249,9 @@ if (-not $health) {
     Write-Host ("  mode: {0}, omniverse_stream: {1}" -f $health.mode, $health.omniverse_stream)
 }
 
-Write-Host "Waiting for Kit signaling on port 49100 (up to 120s)..."
-if (Wait-TcpPort -Port 49100 -MaxSeconds 120) {
+if (-not $kitStarted) {
+    Write-Host "Skipping Kit signaling wait (Kit was not started by this script)."
+} elseif (Wait-TcpPort -Port 49100 -MaxSeconds 120) {
     Write-Host "  Kit signaling port is open."
 } else {
     Write-Warning "Kit signaling port 49100 never opened."
@@ -230,18 +271,20 @@ Write-Host "Waiting for dashboard (up to 60s)..."
 $dashboard = $null
 $deadline = (Get-Date).AddSeconds(60)
 while ((Get-Date) -lt $deadline) {
-    $dashboard = Resolve-DashboardUrl
-    try {
-        $null = Invoke-WebRequest -Uri $dashboard -UseBasicParsing -TimeoutSec 3
-        break
-    } catch {
-        Start-Sleep -Seconds 2
-        $dashboard = $null
+    $dashboard = Resolve-DashboardUrl -FrontendDir $FrontendDir
+    if ($dashboard) {
+        try {
+            $null = Invoke-WebRequest -Uri $dashboard -UseBasicParsing -TimeoutSec 3
+            break
+        } catch {
+            $dashboard = $null
+        }
     }
+    Start-Sleep -Seconds 2
 }
 if (-not $dashboard) {
     $dashboard = "http://127.0.0.1:3000"
-    Write-Warning ("Dashboard not responding yet - open {0} when npm finishes." -f $dashboard)
+    Write-Warning ("Dashboard not confirmed yet - check the 'Argus AI Dashboard' window or {0} for the port npm chose." -f $FrontendLog)
 }
 
 Write-Host ""
