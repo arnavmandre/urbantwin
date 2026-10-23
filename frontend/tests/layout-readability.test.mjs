@@ -24,6 +24,13 @@ test("viewport fills its box and letterboxes rather than crops the stream", () =
   assert.doesNotMatch(viewer, /"[^"\n]*\bobject-cover\b[^"\n]*"/);
 });
 
+test("video sits alone in its wrapper, so AppStreamer's re-parenting cannot lift it over controls", () => {
+  assert.match(
+    viewer,
+    /<div className="absolute inset-0 z-0">\s*<video\b[\s\S]*?\/>\s*<\/div>/,
+  );
+});
+
 test("drawers are siblings of a single viewer, so layout changes never remount it", () => {
   assert.equal(dashboard.match(/<OmniverseViewer\b/g)?.length, 1);
   assert.ok(

@@ -227,25 +227,32 @@ export function OmniverseViewer({
         object-contain, never object-cover: the 1280x720 stream is letterboxed
         into whatever shape the workspace has instead of being cropped (cover
         used to cut off the top of the frame).
+
+        The wrapper must hold nothing but the video. On connect, AppStreamer
+        appends a `display: contents` div to the video's parent and moves the
+        video into it; in a shared parent that put the video after the floating
+        controls in DOM order, so the live picture painted over all of them.
       */}
-      <video
-        id={VIDEO_ELEMENT_ID}
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        tabIndex={0}
-        aria-label="Omniverse RTX viewport. Drag to orbit, scroll to zoom."
-        className={cx(
-          "absolute inset-0 size-full object-contain outline-none",
-          connected
-            ? "cursor-grab active:cursor-grabbing"
-            : "pointer-events-none opacity-0",
-        )}
-      />
+      <div className="absolute inset-0 z-0">
+        <video
+          id={VIDEO_ELEMENT_ID}
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          tabIndex={0}
+          aria-label="Omniverse RTX viewport. Drag to orbit, scroll to zoom."
+          className={cx(
+            "absolute inset-0 size-full object-contain outline-none",
+            connected
+              ? "cursor-grab active:cursor-grabbing"
+              : "pointer-events-none opacity-0",
+          )}
+        />
+      </div>
       {!connected && (
         <div
-          className="absolute inset-x-0 top-0 grid place-items-center p-6 pt-24"
+          className="absolute inset-x-0 top-0 z-10 grid place-items-center p-6 pt-24"
           style={{ bottom: bottomInset }}
         >
           <ViewerStatePanel
@@ -261,7 +268,7 @@ export function OmniverseViewer({
 
       {/* Floating chrome. The layer itself ignores the pointer so the stream
           stays draggable between controls; each control opts back in. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-start justify-between gap-2 p-3 sm:p-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start justify-between gap-2 p-3 sm:p-4">
         <HazardToolbar
           overlay={overlay}
           onOverlayChange={(next) => {
@@ -314,7 +321,7 @@ export function OmniverseViewer({
       </div>
 
       <div
-        className="pointer-events-none absolute inset-x-0 flex flex-wrap items-end gap-2 px-3 pb-3 sm:px-4"
+        className="pointer-events-none absolute inset-x-0 z-10 flex flex-wrap items-end gap-2 px-3 pb-3 sm:px-4"
         style={{ bottom: bottomInset }}
       >
         <div
