@@ -44,7 +44,7 @@ export function ScenarioDrawer({
       // results peek strip from `sm` up, where both are visible side by side.
       style={{ ["--drawer-bottom" as string]: `${bottomInset}px` }}
       className={cx(
-        "absolute bottom-0 right-0 top-0 z-30 flex w-full flex-col sm:bottom-[var(--drawer-bottom)] border-l border-hairline bg-surface-2 shadow-[var(--shadow-lift)] transition-transform duration-300 [transition-timing-function:var(--ease)] sm:w-[400px] sm:rounded-bl-[18px] lg:w-[420px]",
+        "absolute bottom-0 right-0 top-0 z-30 flex w-full flex-col sm:bottom-[var(--drawer-bottom)] border-l border-hairline bg-surface shadow-[var(--shadow-lift)] transition-transform duration-300 [transition-timing-function:var(--ease)] sm:w-[400px] sm:rounded-bl-[18px] lg:w-[420px]",
         open ? "translate-x-0" : "pointer-events-none translate-x-full",
       )}
     >
@@ -56,9 +56,9 @@ export function ScenarioDrawer({
         >
           &larr; Back to city
         </button>
-        <p className="hidden text-[13px] font-semibold text-ink sm:block">
-          Scenario
-        </p>
+        <h2 className="hidden text-[14px] font-semibold tracking-[-0.01em] text-ink sm:block">
+          Simulation controls
+        </h2>
         <button
           ref={closeRef}
           type="button"
@@ -69,7 +69,7 @@ export function ScenarioDrawer({
           <Icon name="close" />
         </button>
       </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 sm:p-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
         {children}
       </div>
     </aside>

@@ -56,7 +56,7 @@ export function ProblemAreas({
 
       {tab === "buildings" ? (
         <>
-          <ul className="mt-5 space-y-2">
+          <ul className="mt-5 grid gap-2 lg:grid-cols-2">
             {visibleBuildings.map((building) => (
               <li
                 key={building.id}
@@ -117,7 +117,7 @@ export function ProblemAreas({
       ) : null}
 
       {tab === "routes" ? (
-        <ul className="mt-5 space-y-2">
+        <ul className="mt-5 grid gap-2 lg:grid-cols-2">
           {routes.map((route) => (
             <li
               key={route.id}
@@ -142,7 +142,7 @@ export function ProblemAreas({
       ) : null}
 
       {tab === "zones" ? (
-        <ul className="mt-5 space-y-2">
+        <ul className="mt-5 grid gap-2 lg:grid-cols-2">
           {zones.map((zone) => (
             <li
               key={zone}
@@ -166,7 +166,7 @@ export function ProblemAreas({
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <li className="rounded-[12px] border border-dashed border-hairline px-3 py-6 text-center text-[12px] text-ink-3">
+    <li className="col-span-full rounded-[12px] border border-dashed border-hairline px-3 py-6 text-center text-[12px] text-ink-3">
       {children}
     </li>
   );

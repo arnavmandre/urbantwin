@@ -184,6 +184,70 @@ export function RunStatus({
   );
 }
 
+/**
+ * One-line status for the scenario drawer. The full card, with run metadata
+ * and warnings, lives in the results panel only; this shows just enough to
+ * follow a run you started from the form, and links to the details.
+ */
+export function RunProgressLine({
+  run,
+  attempt,
+  onShowDetails,
+}: {
+  run: RunSummary | null;
+  attempt: RunAttempt;
+  onShowDetails: () => void;
+}) {
+  const active = attempt.status === "queued" || attempt.status === "running";
+  const headline = attempt.status !== "idle" ? attempt.status : (run?.status ?? "idle");
+  const style = STATUS_STYLE[headline];
+  const pct = Math.round(attempt.progress * 100);
+
+  return (
+    <div className="rounded-[12px] border border-hairline bg-surface px-3 py-2.5" aria-live="polite">
+      <div className="flex items-center gap-2">
+        <Pill tone={style.tone}>
+          <Dot color={style.color} className={active ? "breathe" : undefined} />
+          {style.label}
+        </Pill>
+        <span className="min-w-0 truncate font-mono text-[11px] text-ink-3">
+          {attempt.runId ?? run?.run_id ?? "No run yet"}
+        </span>
+        <button
+          type="button"
+          onClick={onShowDetails}
+          className="ml-auto shrink-0 rounded-[8px] px-2 py-1 text-[12px] font-semibold text-accent hover:bg-accent-soft"
+        >
+          Run details
+        </button>
+      </div>
+      {active ? (
+        <>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
+            <div
+              className="h-full rounded-full bg-accent transition-[width] duration-500 [transition-timing-function:var(--ease)]"
+              style={{ width: `${Math.max(2, pct)}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-[12px] text-ink-3">
+            {attempt.status === "queued"
+              ? "Waiting for the worker…"
+              : `Running live simulator… about ${pct}%`}
+          </p>
+        </>
+      ) : null}
+      {attempt.error ? (
+        <p
+          role="alert"
+          className="mt-2 rounded-[10px] bg-negative-soft px-2.5 py-2 text-[12px] leading-relaxed text-negative"
+        >
+          {attempt.error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">

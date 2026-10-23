@@ -14,7 +14,7 @@ import { Disclosures } from "@/components/Disclosures";
 import { MetricGrid } from "@/components/MetricGrid";
 import { ProblemAreas } from "@/components/ProblemAreas";
 import { ResultsDrawer } from "@/components/ResultsDrawer";
-import { RunStatus } from "@/components/RunStatus";
+import { RunProgressLine, RunStatus } from "@/components/RunStatus";
 import { ScenarioControls } from "@/components/ScenarioControls";
 import { ScenarioDrawer } from "@/components/ScenarioDrawer";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -70,6 +70,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
   const [resultsOpen, setResultsOpen] = useState(false);
   const [peekHeight, setPeekHeight] = useState(64);
   const [viewerStatus, setViewerStatus] = useState<ViewerState["status"]>("idle");
+  const [aboutOpen, setAboutOpen] = useState(false);
   const scenarioButtonRef = useRef<HTMLButtonElement>(null);
 
   const onComplete = useCallback((summary: RunSummary) => {
@@ -107,12 +108,13 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
-      if (scenarioOpen) closeScenario();
+      if (aboutOpen) setAboutOpen(false);
+      else if (scenarioOpen) closeScenario();
       else if (resultsOpen) setResultsOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeScenario, resultsOpen, scenarioOpen]);
+  }, [aboutOpen, closeScenario, resultsOpen, scenarioOpen]);
 
   const submit = useCallback(
     (options?: {
@@ -150,6 +152,15 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
         health={health}
         viewerStatus={viewerStatus}
         sceneLabel={run?.city?.name ?? streamConfig.stage}
+        aboutOpen={aboutOpen}
+        onAboutOpenChange={setAboutOpen}
+        about={
+          <Disclosures
+            health={health}
+            city={run?.city}
+            stage={run?.artifacts?.omniverse_stage}
+          />
+        }
       />
 
       <main className="relative min-h-0 flex-1 overflow-hidden">
@@ -183,6 +194,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
 
         <ScenarioDrawer open={scenarioOpen} onClose={closeScenario} bottomInset={peekHeight}>
           <ScenarioControls
+            plain
             catalog={scenarios}
             scenario={scenario}
             onScenarioChange={setScenario}
@@ -196,7 +208,14 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
               runner.state.status === "failed" ? null : runner.state.error
             }
           />
-          <RunStatus run={run} attempt={attempt} />
+          <RunProgressLine
+            run={run}
+            attempt={attempt}
+            onShowDetails={() => {
+              setResultsOpen(true);
+              closeScenario();
+            }}
+          />
         </ScenarioDrawer>
 
         <ResultsDrawer
@@ -209,6 +228,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
           expanded={resultsOpen}
           onExpandedChange={setResultsOpen}
           onPeekHeight={setPeekHeight}
+          onOpenScenario={() => setScenarioOpen(true)}
         >
           {bootstrap.upstreamError ? (
             <Card className="border-[color:var(--negative)]/40 bg-negative-soft">
@@ -245,7 +265,8 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
             </Card>
           ) : null}
 
-          <RunStatus run={run} attempt={attempt} />
+          {/* The one detailed status section; the drawer shows a single line. */}
+          {run || attempt.status !== "idle" ? <RunStatus run={run} attempt={attempt} /> : null}
 
           {run && run.before ? (
             <>
@@ -309,21 +330,18 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
             </>
           ) : null}
 
-          {!run && !bootstrap.upstreamError ? (
-            <Card>
-              <CardHeader
-                eyebrow="No results"
-                title="No run is loaded"
-                description="Open Scenario and run a simulation to populate these results."
-              />
-            </Card>
-          ) : null}
-
-          <Disclosures
-            health={health}
-            city={run?.city}
-            stage={run?.artifacts?.omniverse_stage}
-          />
+          <p className="text-[12px] leading-relaxed text-ink-2">
+            Every figure here is a heuristic prototype estimate from synthetic,
+            survey-calibrated citizens, not a medical, meteorological, hydraulic
+            or engineering prediction.{" "}
+            <button
+              type="button"
+              onClick={() => setAboutOpen(true)}
+              className="font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              What this prototype is and is not
+            </button>
+          </p>
 
           {health.mode === "mock" ? (
             <StateTester

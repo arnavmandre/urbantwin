@@ -22,8 +22,10 @@
 
   --ink: #1d1d1f;
   --ink-2: #53535a;
-  --ink-3: #86868b;
-  --ink-4: #a6a6ab;
+  /* ink-3 carries small secondary text: >= 4.5:1 on surface and surface-2.
+     ink-4 is for ticks, separators and other non-essential marks. */
+  --ink-3: #6e6e73;
+  --ink-4: #85858a;
 
   --accent: #0b7d72;
   --accent-hover: #096a61;

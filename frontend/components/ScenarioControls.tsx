@@ -15,6 +15,9 @@ import type {
   ScenarioInput,
 } from "@/lib/types";
 
+const RANGES_NOTE =
+  "Ranges are the simulator's accepted inputs. Values outside them are refused before a run starts.";
+
 const FIELD_ORDER: ScenarioField[] = [
   "temperature",
   "humidity",
@@ -34,6 +37,7 @@ export function ScenarioControls({
   fieldErrors,
   formError,
   className,
+  plain = false,
 }: {
   catalog: ScenarioCatalog;
   scenario: ScenarioInput;
@@ -46,18 +50,21 @@ export function ScenarioControls({
   fieldErrors: Partial<Record<ScenarioField, string>>;
   formError: string | null;
   className?: string;
+  /** Render without card chrome, for a container that already frames it. */
+  plain?: boolean;
 }) {
   const activePreset = catalog.presets.find((preset) =>
     FIELD_ORDER.every((field) => preset[field] === scenario[field]),
   );
 
   return (
-    <Card className={className}>
-      <CardHeader
-        eyebrow="Scenario"
-        title="Simulation controls"
-        description="Ranges are the simulator's accepted inputs. Values outside them are refused before a run starts."
-      />
+    <Frame plain={plain} className={className}>
+      {plain ? (
+        // The surrounding drawer already titles this "Simulation controls".
+        <p className="text-[12.5px] leading-relaxed text-ink-2">{RANGES_NOTE}</p>
+      ) : (
+        <CardHeader eyebrow="Scenario" title="Simulation controls" description={RANGES_NOTE} />
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         {catalog.presets.map((preset) => {
@@ -168,8 +175,20 @@ export function ScenarioControls({
         This prototype runs one simulation at a time, so Run is disabled while a
         run is active.
       </p>
-    </Card>
+    </Frame>
   );
+}
+
+function Frame({
+  plain,
+  className,
+  children,
+}: {
+  plain: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return plain ? <div className={className}>{children}</div> : <Card className={className}>{children}</Card>;
 }
 
 function ScenarioSlider({
@@ -243,11 +262,11 @@ function ScenarioSlider({
       />
 
       <div className="flex items-center justify-between">
-        <span className="tabular text-[11px] text-ink-4">
+        <span className="tabular text-[11px] text-ink-3">
           {formatScenarioValue(field, min)}
         </span>
-        <span className="text-[11px] text-ink-4">{unit}</span>
-        <span className="tabular text-[11px] text-ink-4">
+        <span className="text-[11px] text-ink-3">{unit}</span>
+        <span className="tabular text-[11px] text-ink-3">
           {formatScenarioValue(field, max)}
         </span>
       </div>

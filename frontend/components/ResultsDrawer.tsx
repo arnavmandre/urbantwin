@@ -38,6 +38,7 @@ export function ResultsDrawer({
   expanded,
   onExpandedChange,
   onPeekHeight,
+  onOpenScenario,
   bodyRef,
   children,
 }: {
@@ -51,6 +52,7 @@ export function ResultsDrawer({
   onExpandedChange: (expanded: boolean) => void;
   /** Reports the collapsed strip's height so floating chrome can sit above it. */
   onPeekHeight: (px: number) => void;
+  onOpenScenario: () => void;
   bodyRef?: React.Ref<HTMLDivElement>;
   children: ReactNode;
 }) {
@@ -131,11 +133,22 @@ export function ResultsDrawer({
             })}
           </dl>
         ) : (
-          <p className="text-[12px] text-ink-3 sm:flex-1">
-            {upstreamError
-              ? "No results: the configured backend is unreachable."
-              : "No results yet. Open Scenario and run a simulation."}
-          </p>
+          <div className="flex items-center gap-2 sm:flex-1 sm:justify-center">
+            <p className="text-[12.5px] text-ink-2">
+              {upstreamError
+                ? "No results: the configured backend is unreachable."
+                : "No simulation results yet."}
+            </p>
+            {upstreamError ? null : (
+              <button
+                type="button"
+                onClick={onOpenScenario}
+                className="rounded-[8px] px-2 py-1 text-[12.5px] font-semibold text-accent hover:bg-accent-soft"
+              >
+                Open Scenario
+              </button>
+            )}
+          </div>
         )}
 
         <div className="ml-auto flex items-center gap-2">
@@ -212,8 +225,9 @@ function statusLine(
     };
   }
   if (!run) return { text: "Idle", color: "var(--ink-4)" };
+  const status = run.status.charAt(0).toUpperCase() + run.status.slice(1);
   return {
-    text: `${run.run_id} · ${source}`,
+    text: `${status} · ${run.run_id} · ${source}`,
     color: run.source === "live" ? "var(--positive)" : "var(--caution)",
   };
 }

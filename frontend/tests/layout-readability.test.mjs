@@ -77,3 +77,21 @@ test("theme is light-only", () => {
   assert.doesNotMatch(styles, /prefers-color-scheme: dark/);
   assert.match(styles, /color-scheme: light/);
 });
+
+test("full run status renders once; the drawer shows a single status line", () => {
+  assert.equal(dashboard.match(/<RunStatus\b/g)?.length, 1);
+  assert.match(dashboard, /<RunProgressLine\b/);
+});
+
+test("prototype disclosures live in the About panel, linked from results", () => {
+  const disclosures = dashboard.match(/<Disclosures\b/g)?.length;
+  assert.equal(disclosures, 1);
+  assert.match(dashboard, /about=\{\s*<Disclosures/);
+  assert.match(dashboard, /What this prototype is and is not/);
+});
+
+test("no large empty-results card; the peek offers Open Scenario instead", () => {
+  assert.doesNotMatch(dashboard, /No run is loaded/);
+  assert.match(resultsDrawer, /No simulation results yet\./);
+  assert.match(resultsDrawer, /Open Scenario/);
+});

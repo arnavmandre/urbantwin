@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 import { Dot, Pill, type PillTone } from "@/components/ui/Pill";
@@ -28,12 +28,19 @@ export function SiteHeader({
   health,
   viewerStatus,
   sceneLabel,
+  aboutOpen: open,
+  onAboutOpenChange,
+  about,
 }: {
   health: Health;
   viewerStatus: ViewerState["status"];
   sceneLabel: string;
+  /** The About & status panel is owned by the page so results can open it. */
+  aboutOpen: boolean;
+  onAboutOpenChange: (open: boolean) => void;
+  /** Prototype methodology and limitations, shown at the top of the panel. */
+  about: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
   const fullscreen = useFullscreen();
 
   const live = health.mode === "live" && health.capabilities.live_simulation;
@@ -92,14 +99,14 @@ export function SiteHeader({
           </Pill>
           <button
             type="button"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => onAboutOpenChange(!open)}
             aria-expanded={open}
             aria-controls="status-panel"
             className="flex items-center gap-1.5 rounded-full border border-hairline px-2.5 py-1 text-[11px] font-semibold text-ink-2 transition-colors hover:text-ink"
           >
             <Icon name="info" className="size-3.5" />
-            <span className="hidden sm:inline">{open ? "Hide status" : "What is live?"}</span>
-            <span className="sr-only sm:hidden">What is live?</span>
+            <span className="hidden sm:inline">About &amp; status</span>
+            <span className="sr-only sm:hidden">About and status</span>
           </button>
           {fullscreen.supported ? (
             <button
@@ -119,9 +126,15 @@ export function SiteHeader({
       {open ? (
         <div
           id="status-panel"
-          className="absolute inset-x-0 top-full max-h-[70dvh] overflow-y-auto border-b border-hairline bg-surface shadow-[var(--shadow-lift)]"
+          role="region"
+          aria-label="About and status"
+          className="absolute inset-x-0 top-full max-h-[min(78dvh,760px)] overflow-y-auto border-b border-hairline bg-surface shadow-[var(--shadow-lift)]"
         >
-          <div className="mx-auto max-w-[1560px] px-5 py-4 sm:px-8">
+          <div className="mx-auto max-w-[1560px] space-y-5 px-5 py-4 sm:px-8">
+            {about}
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">
+              What is live
+            </p>
             <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">

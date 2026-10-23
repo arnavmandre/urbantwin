@@ -56,7 +56,7 @@ export function BeforeAfterChart({
         }
       />
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-5 grid gap-x-8 gap-y-4 lg:grid-cols-2">
         {COMPARISON_METRICS.map((key) => (
           <ComparisonRow
             key={key}
