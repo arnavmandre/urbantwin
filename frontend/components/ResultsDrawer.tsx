@@ -81,7 +81,9 @@ export function ResultsDrawer({
         ref={peekRef}
         className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 sm:px-5"
       >
-        <div className="min-w-0">
+        {/* On phones a fixed basis lets the status line truncate instead of
+            pushing the Before/After and Details controls onto their own row. */}
+        <div className="min-w-0 max-sm:flex-1 max-sm:basis-32">
           <p className="text-[13px] font-semibold tracking-[-0.01em] text-ink">
             Scenario impact
           </p>
@@ -182,7 +184,14 @@ export function ResultsDrawer({
             className="flex items-center gap-1.5 rounded-[10px] border border-hairline px-2.5 py-1.5 text-[12px] font-semibold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <Icon name={expanded ? "chevron-down" : "chevron-up"} />
-            <span>{expanded ? "Back to city" : "Details"}</span>
+            {expanded ? (
+              <span>Back to city</span>
+            ) : (
+              <>
+                <span className="hidden sm:inline">Details</span>
+                <span className="sr-only sm:hidden">Show result details</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -196,6 +205,38 @@ export function ResultsDrawer({
         <div className="mx-auto flex max-w-[1200px] flex-col gap-4">{children}</div>
       </div>
     </section>
+  );
+}
+
+/**
+ * A collapsible group inside the expanded results. The body stays mounted
+ * while closed, so panels inside keep their state and fetched data.
+ */
+export function ResultsSection({
+  title,
+  meta,
+  open,
+  children,
+}: {
+  title: string;
+  /** Short context shown in the header, e.g. a status or a count. */
+  meta?: ReactNode;
+  /** Initial (and externally forced) open state. */
+  open?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details open={open} className="group">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-[10px] px-1 py-2 text-[13px] font-semibold text-ink hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+        <Icon
+          name="chevron-down"
+          className="size-3.5 -rotate-90 text-ink-3 transition-transform group-open:rotate-0"
+        />
+        {title}
+        {meta ? <span className="ml-auto flex items-center gap-2 text-[12px] font-normal text-ink-3">{meta}</span> : null}
+      </summary>
+      <div className="flex flex-col gap-4 pb-2 pt-2">{children}</div>
+    </details>
   );
 }
 

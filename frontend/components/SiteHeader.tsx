@@ -144,7 +144,7 @@ export function SiteHeader({
                   {Object.entries(health.capabilities).map(([key, value]) => (
                     <li key={key} className="flex items-center gap-2 text-[12px] text-ink-2">
                       <Dot color={value ? "var(--positive)" : "var(--ink-4)"} />
-                      <span className="capitalize">{key.replaceAll("_", " ")}</span>
+                      <span>{capabilityLabel(key)}</span>
                       <span className="ml-auto tabular text-ink-3">
                         {value ? "available" : "not built"}
                       </span>
@@ -180,6 +180,23 @@ export function SiteHeader({
         </div>
       ) : null}
     </header>
+  );
+}
+
+/** Display names only; the keys are the `/api/health` capability ids. */
+const CAPABILITY_LABELS: Record<string, string> = {
+  http_api: "HTTP API",
+  live_simulation: "Live Simulation",
+  omniverse_streaming: "Omniverse Streaming",
+  llm_advisor: "LLM Advisor",
+  random_forest_inference: "Random Forest Inference",
+  run_persistence: "Run Persistence",
+};
+
+function capabilityLabel(key: string): string {
+  return (
+    CAPABILITY_LABELS[key] ??
+    key.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
   );
 }
 

@@ -13,7 +13,7 @@ import { CitizenInspector } from "@/components/CitizenInspector";
 import { Disclosures } from "@/components/Disclosures";
 import { MetricGrid } from "@/components/MetricGrid";
 import { ProblemAreas } from "@/components/ProblemAreas";
-import { ResultsDrawer } from "@/components/ResultsDrawer";
+import { ResultsDrawer, ResultsSection } from "@/components/ResultsDrawer";
 import { RunProgressLine, RunStatus } from "@/components/RunStatus";
 import { ScenarioControls } from "@/components/ScenarioControls";
 import { ScenarioDrawer } from "@/components/ScenarioDrawer";
@@ -265,9 +265,6 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
             </Card>
           ) : null}
 
-          {/* The one detailed status section; the drawer shows a single line. */}
-          {run || attempt.status !== "idle" ? <RunStatus run={run} attempt={attempt} /> : null}
-
           {run && run.before ? (
             <>
               {run.after && Object.keys(run.intervention ?? {}).length > 0 ? (
@@ -284,64 +281,96 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
                 after={run.after?.metrics}
                 interventionLabel={interventionLabel(run)}
               />
-              <BehaviorLegend
-                before={run.before.behavior_counts}
-                after={run.after?.behavior_counts}
-              />
-              {arm ? <ProblemAreas summary={arm} state={shown} /> : null}
-              {health.mode === "live" && run.status === "complete" ? (
-                <>
-                  <RagAdvisorPanel
-                    key={`rag-${run.run_id}`}
-                    runId={run.run_id}
-                    busy={runner.active}
-                    onApplySelected={(selectedRecommendationIds) =>
-                      submit({ forceApply: true, selectedRecommendationIds })
-                    }
-                  />
-                  <RunExplainPanel runId={run.run_id} />
-                </>
-              ) : null}
-              {run.advisor ? (
-                <details className="rounded-[18px] border border-hairline bg-surface-1 p-4">
-                  <summary className="cursor-pointer text-[13px] font-semibold text-ink-2">
-                    Simulator calculation details
-                  </summary>
-                  <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-                    These deterministic rules convert selected AI actions into executable simulator parameters and identify affected locations.
-                  </p>
-                  <div className="mt-4">
-                    <AdvisorPanel
-                      advisor={run.advisor}
-                      source={run.advisor_source}
-                      applied={run.intervention}
-                      canApply={!runner.active}
-                      onApplyRecommended={() => submit({ forceApply: true })}
-                    />
-                  </div>
-                </details>
-              ) : null}
-              <CitizenInspector
-                key={`${run.run_id}-${shown}`}
-                runId={run.run_id}
-                state={shown}
-                hasAfter={hasAfter}
-              />
             </>
           ) : null}
 
-          <p className="text-[12px] leading-relaxed text-ink-2">
-            Every figure here is a heuristic prototype estimate from synthetic,
-            survey-calibrated citizens, not a medical, meteorological, hydraulic
-            or engineering prediction.{" "}
-            <button
-              type="button"
-              onClick={() => setAboutOpen(true)}
-              className="font-semibold text-accent underline-offset-2 hover:underline"
+          {/* The one detailed status section; the drawer shows a single line.
+              Opens by itself while a run is active or after it failed. */}
+          {run || attempt.status !== "idle" ? (
+            <ResultsSection
+              title="Run details"
+              open={attempt.status !== "idle" && attempt.status !== "complete"}
+              meta={<span className="font-mono">{attempt.runId ?? run?.run_id}</span>}
             >
-              What this prototype is and is not
-            </button>
-          </p>
+              <RunStatus run={run} attempt={attempt} />
+            </ResultsSection>
+          ) : null}
+
+          {run && run.before ? (
+            <>
+              <ResultsSection
+                title="Behaviour and pressure points"
+                meta={`${run.before.problem_buildings.length} flagged buildings`}
+              >
+                <BehaviorLegend
+                  before={run.before.behavior_counts}
+                  after={run.after?.behavior_counts}
+                />
+                {arm ? <ProblemAreas summary={arm} state={shown} /> : null}
+              </ResultsSection>
+
+              {(health.mode === "live" && run.status === "complete") || run.advisor ? (
+                <ResultsSection title="Advisor and calculation details">
+                  {health.mode === "live" && run.status === "complete" ? (
+                    <>
+                      <RagAdvisorPanel
+                        key={`rag-${run.run_id}`}
+                        runId={run.run_id}
+                        busy={runner.active}
+                        onApplySelected={(selectedRecommendationIds) =>
+                          submit({ forceApply: true, selectedRecommendationIds })
+                        }
+                      />
+                      <RunExplainPanel runId={run.run_id} />
+                    </>
+                  ) : null}
+                  {run.advisor ? (
+                    <div>
+                      <p className="mb-3 text-[12px] leading-relaxed text-ink-3">
+                        These deterministic rules convert selected AI actions into executable simulator parameters and identify affected locations.
+                      </p>
+                      <AdvisorPanel
+                        advisor={run.advisor}
+                        source={run.advisor_source}
+                        applied={run.intervention}
+                        canApply={!runner.active}
+                        onApplyRecommended={() => submit({ forceApply: true })}
+                      />
+                    </div>
+                  ) : null}
+                </ResultsSection>
+              ) : null}
+
+              <ResultsSection
+                title="Citizens"
+                meta={`${run.before.citizen_count.toLocaleString("en-GB")} simulated`}
+              >
+                <CitizenInspector
+                  key={`${run.run_id}-${shown}`}
+                  runId={run.run_id}
+                  state={shown}
+                  hasAfter={hasAfter}
+                />
+              </ResultsSection>
+            </>
+          ) : null}
+
+          <ResultsSection title="Methodology and limitations">
+            <p className="text-[12px] leading-relaxed text-ink-2">
+              Every figure here is a heuristic prototype estimate from synthetic,
+              survey-calibrated citizens, not a medical, meteorological, hydraulic
+              or engineering prediction. The full statement of what this prototype
+              is, what it is not and where the numbers come from is in About &amp;
+              status.{" "}
+              <button
+                type="button"
+                onClick={() => setAboutOpen(true)}
+                className="font-semibold text-accent underline-offset-2 hover:underline"
+              >
+                What this prototype is and is not
+              </button>
+            </p>
+          </ResultsSection>
 
           {health.mode === "mock" ? (
             <StateTester

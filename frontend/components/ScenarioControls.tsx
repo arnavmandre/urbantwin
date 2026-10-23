@@ -3,7 +3,6 @@
 import { useId } from "react";
 
 import { Card, CardHeader } from "@/components/ui/Card";
-import { Pill } from "@/components/ui/Pill";
 import { cx } from "@/lib/cx";
 import {
   SCENARIO_FIELD_META,
@@ -17,6 +16,17 @@ import type {
 
 const RANGES_NOTE =
   "Ranges are the simulator's accepted inputs. Values outside them are refused before a run starts.";
+
+/**
+ * One-line helpers shown under each slider. The full explanations in
+ * SCENARIO_FIELD_META stay available, unabridged, under "Input details".
+ */
+const SHORT_HELP: Record<ScenarioField, string> = {
+  temperature: "Ambient air temperature for the whole run.",
+  humidity: "Raises the effective heat load.",
+  rainfall: "Prototype scale; drives the rain and flood-risk proxy.",
+  population: "Demand scale, not a headcount and not the rendered agents.",
+};
 
 const FIELD_ORDER: ScenarioField[] = [
   "temperature",
@@ -66,7 +76,7 @@ export function ScenarioControls({
         <CardHeader eyebrow="Scenario" title="Simulation controls" description={RANGES_NOTE} />
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         {catalog.presets.map((preset) => {
           const active = activePreset?.id === preset.id;
           return (
@@ -98,14 +108,13 @@ export function ScenarioControls({
       </div>
 
       {/* One column at every width: the controls live in a fixed-width drawer. */}
-      <div className="mt-5 space-y-5">
+      <div className="mt-4 space-y-4">
         {FIELD_ORDER.map((field) => (
           <ScenarioSlider
             key={field}
             field={field}
             value={scenario[field]}
             range={catalog.constraints[field]}
-            unit={catalog.units[field]}
             disabled={busy}
             error={fieldErrors[field]}
             onChange={(value) => onScenarioChange({ ...scenario, [field]: value })}
@@ -115,7 +124,7 @@ export function ScenarioControls({
 
       <label
         className={cx(
-          "mt-5 flex cursor-pointer items-start gap-3 rounded-[12px] border border-hairline bg-surface-2 p-3",
+          "mt-4 flex cursor-pointer items-start gap-3 rounded-[12px] border border-hairline bg-surface-2 p-2.5",
           busy && "cursor-not-allowed opacity-60",
         )}
       >
@@ -140,13 +149,22 @@ export function ScenarioControls({
       {formError ? (
         <p
           role="alert"
-          className="mt-4 rounded-[12px] border border-[color:var(--negative)]/30 bg-negative-soft px-3 py-2 text-[12px] leading-relaxed text-negative"
+          className="mt-3 rounded-[12px] border border-[color:var(--negative)]/30 bg-negative-soft px-3 py-2 text-[12px] leading-relaxed text-negative"
         >
           {formError}
         </p>
       ) : null}
 
-      <div className="mt-5 flex items-center gap-2">
+      {/* In the drawer the Run row stays pinned to the bottom of the scroll
+          area, so it is reachable on short screens without scrolling. The
+          negative offsets cancel the drawer body's padding. */}
+      <div
+        className={cx(
+          "mt-4 flex items-center gap-2",
+          plain &&
+            "sticky -bottom-4 z-10 -mx-4 border-t border-hairline bg-surface px-4 py-3 sm:-bottom-5 sm:-mx-5 sm:px-5",
+        )}
+      >
         <button
           type="button"
           onClick={onRun}
@@ -171,10 +189,32 @@ export function ScenarioControls({
         ) : null}
       </div>
 
-      <p className="mt-3 text-[11px] leading-relaxed text-ink-3">
-        This prototype runs one simulation at a time, so Run is disabled while a
-        run is active.
+      <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+        One simulation at a time: Run is disabled while a run is active.
       </p>
+
+      <details className="mt-3 rounded-[12px] border border-hairline px-3 py-2">
+        <summary className="cursor-pointer text-[12px] font-semibold text-ink-2">
+          Input details
+        </summary>
+        <dl className="mt-2 space-y-2">
+          {FIELD_ORDER.map((field) => (
+            <div key={field}>
+              <dt className="text-[12px] font-medium text-ink">
+                {SCENARIO_FIELD_META[field].label}{" "}
+                <span className="font-normal text-ink-3">
+                  {formatScenarioValue(field, catalog.constraints[field][0])} to{" "}
+                  {formatScenarioValue(field, catalog.constraints[field][1])},{" "}
+                  {catalog.units[field]}
+                </span>
+              </dt>
+              <dd className="text-[11.5px] leading-relaxed text-ink-2">
+                {SCENARIO_FIELD_META[field].help}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </details>
     </Frame>
   );
 }
@@ -195,7 +235,6 @@ function ScenarioSlider({
   field,
   value,
   range,
-  unit,
   disabled,
   error,
   onChange,
@@ -203,7 +242,6 @@ function ScenarioSlider({
   field: ScenarioField;
   value: number;
   range: [number, number];
-  unit: string;
   disabled: boolean;
   error?: string;
   onChange: (value: number) => void;
@@ -265,26 +303,19 @@ function ScenarioSlider({
         <span className="tabular text-[11px] text-ink-3">
           {formatScenarioValue(field, min)}
         </span>
-        <span className="text-[11px] text-ink-3">{unit}</span>
         <span className="tabular text-[11px] text-ink-3">
           {formatScenarioValue(field, max)}
         </span>
       </div>
 
-      <p id={`${id}-help`} className="mt-1 text-[11px] leading-relaxed text-ink-3">
-        {meta.help}
+      <p id={`${id}-help`} className="text-[11px] leading-relaxed text-ink-3">
+        {SHORT_HELP[field]}
       </p>
 
       {error || outOfRange ? (
         <p role="alert" className="mt-1 text-[11px] font-medium text-negative">
           {error ?? `Outside the simulator's accepted range of ${min} to ${max}.`}
         </p>
-      ) : null}
-
-      {field === "population" ? (
-        <Pill tone="neutral" className="mt-2">
-          {"Population equivalent \u2260 rendered agents"}
-        </Pill>
       ) : null}
     </div>
   );

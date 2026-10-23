@@ -5,19 +5,18 @@ import type {
 } from "./adapter";
 
 /**
- * The placeholder viewport adapter.
+ * The offline viewport adapter.
  *
- * No streaming-enabled Kit application exists, so this adapter deliberately
- * produces no picture. It contacts `/api/stream/config`, reads back
- * `status: "offline"`, and reports offline with the reason the server gave.
- *
- * It exists so the viewport has a working, honest implementation of the same
- * interface the NVIDIA client will implement — not to simulate a stream.
+ * Selected whenever `/api/stream/config` does not advertise a Kit session:
+ * always in mock mode (recorded fixtures never stream), and in live mode while
+ * Kit signaling is not listening. It deliberately produces no picture and
+ * reports offline with the reason that applies. The real connection is
+ * `kit-webrtc-adapter.ts`.
  */
 export const mockViewerAdapter: ViewerAdapter = {
   id: "placeholder-offline",
-  displayName: "Placeholder viewport",
-  transportLabel: "No transport \u00b7 stream not configured",
+  displayName: "Offline viewport",
+  transportLabel: "No stream · offline",
 
   async connect(ctx: ViewerConnectContext): Promise<ViewerConnection> {
     const { config, onState, signal } = ctx;
@@ -36,19 +35,22 @@ export const mockViewerAdapter: ViewerAdapter = {
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
 
     if (config.status === "offline") {
+      // Recorded fixtures carry their own historical reason text; in mock mode
+      // the accurate statement is simply that mock mode does not stream.
+      const mock = config.source === "recorded_fixture";
       onState({
         status: "offline",
-        message:
-          config.reason ??
-          "No streaming session is available for this deployment.",
+        message: mock
+          ? "3D streaming is unavailable in mock mode. Recorded fixtures have no Kit session."
+          : (config.reason ?? "No Kit streaming session is available right now."),
         stream: null,
         capabilities: { video: false, input: false, messaging: false },
         detail: [
-          `Stage: ${config.stage}`,
-          config.desktop_fallback
-            ? `Runs today on the desktop RTX machine: ${config.desktop_fallback}`
+          mock
+            ? "To stream, point URBANTWIN_API_BASE at the Python API and start the Kit streaming app."
             : "",
-          "Swap in the NVIDIA Kit App Streaming client behind this same adapter to go live.",
+          `Stage: ${config.stage}`,
+          config.desktop_fallback ? `Desktop editor: ${config.desktop_fallback}` : "",
         ].filter(Boolean),
       });
     } else {
@@ -69,7 +71,7 @@ export const mockViewerAdapter: ViewerAdapter = {
           accepted: false,
           delivered: false,
           reason:
-            "The placeholder viewport has no Kit session, so view commands are not delivered.",
+            "The viewport is offline (no Kit session), so view commands are not delivered.",
           command,
         };
       },
