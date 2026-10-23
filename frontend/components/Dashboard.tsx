@@ -13,15 +13,19 @@ import { CitizenInspector } from "@/components/CitizenInspector";
 import { Disclosures } from "@/components/Disclosures";
 import { MetricGrid } from "@/components/MetricGrid";
 import { ProblemAreas } from "@/components/ProblemAreas";
+import { ResultsDrawer } from "@/components/ResultsDrawer";
 import { RunStatus } from "@/components/RunStatus";
 import { ScenarioControls } from "@/components/ScenarioControls";
+import { ScenarioDrawer } from "@/components/ScenarioDrawer";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
 import { Pill } from "@/components/ui/Pill";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { cx } from "@/lib/cx";
 import type { Bootstrap } from "@/lib/server/bootstrap";
 import { useRunner } from "@/lib/use-runner";
 import type { RunState, RunSummary, ScenarioInput } from "@/lib/types";
+import type { ViewerState } from "@/lib/viewer";
 
 /**
  * The viewport is client-only: WebRTC and media APIs do not exist during server
@@ -31,14 +35,18 @@ const OmniverseViewer = dynamic(
   () => import("@/components/OmniverseViewer").then((m) => m.OmniverseViewer),
   {
     ssr: false,
-    loading: () => (
-      <div className="min-h-[260px] sm:min-h-[300px] lg:min-h-[340px] rounded-[18px] border border-hairline bg-surface shadow-[var(--shadow-card)]">
-        <div className="shimmer size-full min-h-[260px] sm:min-h-[300px] lg:min-h-[340px] rounded-[18px]" />
-      </div>
-    ),
+    loading: () => <div className="shimmer size-full" />,
   },
 );
 
+/**
+ * Immersive workspace: the Kit viewport fills everything under the header,
+ * and the scenario form and the results float over it in two drawers.
+ *
+ * The viewer is rendered once, at a fixed position in the tree, and the
+ * drawers are its siblings. Opening, closing or resizing them never remounts
+ * it, so the WebRTC session survives every layout change.
+ */
 export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
   const { health, scenarios, streamConfig } = bootstrap;
 
@@ -58,11 +66,18 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
   const revealImpactAfterRun = useRef(false);
   const [scrollToImpact, setScrollToImpact] = useState(false);
 
+  const [scenarioOpen, setScenarioOpen] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const [peekHeight, setPeekHeight] = useState(64);
+  const [viewerStatus, setViewerStatus] = useState<ViewerState["status"]>("idle");
+  const scenarioButtonRef = useRef<HTMLButtonElement>(null);
+
   const onComplete = useCallback((summary: RunSummary) => {
     setRun(summary);
     if (revealImpactAfterRun.current) {
       revealImpactAfterRun.current = false;
       setState("after");
+      setResultsOpen(true);
       setScrollToImpact(true);
     }
   }, []);
@@ -77,10 +92,27 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
   const other = shown === "after" ? run?.before : run?.after;
 
   useEffect(() => {
-    if (!scrollToImpact || !run?.after || !impactRef.current) return;
+    if (!scrollToImpact || !run?.after || !resultsOpen || !impactRef.current) return;
     impactRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     setScrollToImpact(false);
-  }, [run, scrollToImpact]);
+  }, [resultsOpen, run, scrollToImpact]);
+
+  const closeScenario = useCallback(() => {
+    setScenarioOpen(false);
+    scenarioButtonRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // Escape closes the topmost panel. Controls that own their own popovers
+  // (the layers menu) mark the event handled first.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (scenarioOpen) closeScenario();
+      else if (resultsOpen) setResultsOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeScenario, resultsOpen, scenarioOpen]);
 
   const submit = useCallback(
     (options?: {
@@ -105,107 +137,120 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
     [applyInterventions, runner, scenario],
   );
 
+  const attempt = {
+    status: runner.state.status,
+    runId: runner.state.runId,
+    progress: runner.state.progress,
+    error: runner.state.status === "failed" ? runner.state.error : null,
+  };
+
   return (
-    <div className="min-h-dvh">
-      <SiteHeader health={health} />
+    <div className="flex h-dvh flex-col overflow-hidden bg-canvas">
+      <SiteHeader
+        health={health}
+        viewerStatus={viewerStatus}
+        sceneLabel={run?.city?.name ?? streamConfig.stage}
+      />
 
-      <main className="mx-auto max-w-[1560px] px-5 py-6 sm:px-8 sm:py-8">
-        {bootstrap.upstreamError ? (
-          <Card className="mb-6 border-[color:var(--negative)]/40 bg-negative-soft">
-            <CardHeader
-              eyebrow="Backend"
-              title="The configured backend is unreachable"
-              description={bootstrap.upstreamError}
-            />
-            <p className="mt-3 text-[12px] leading-relaxed text-ink-2">
-              No results are shown, because showing recorded numbers here would
-              misrepresent them as live output.
-            </p>
-          </Card>
-        ) : null}
-
-        <div className="grid gap-5 lg:grid-cols-3 xl:gap-6">
-          <div className="flex flex-col gap-5 lg:col-span-2 xl:gap-6">
-            <OmniverseViewer
-              runId={run?.run_id ?? null}
-              config={streamConfig}
-              state={shown}
-              onStateChange={setState}
-              hasAfter={hasAfter}
-              className="rise"
-            />
-
-            {run && arm ? (
-              <Card>
-                <CardHeader
-                  eyebrow="Human impact"
-                  title="Headline metrics"
-                  description="Population-weighted results for the state shown in the viewport."
-                  actions={
-                    <SegmentedControl<RunState>
-                      ariaLabel="Metric state"
-                      size="sm"
-                      value={shown}
-                      onChange={setState}
-                      segments={[
-                        { value: "before", label: "Before" },
-                        {
-                          value: "after",
-                          label: "After",
-                          disabled: !hasAfter,
-                          title: hasAfter
-                            ? undefined
-                            : "This run has no intervention arm.",
-                        },
-                      ]}
-                    />
-                  }
-                />
-                <MetricGrid
-                  className="mt-5 lg:grid-cols-4"
-                  metrics={arm.metrics}
-                  comparison={other?.metrics}
-                  state={shown}
-                />
-              </Card>
-            ) : null}
-          </div>
-
-          <div className="flex flex-col gap-5 xl:gap-6">
-            <ScenarioControls
-              catalog={scenarios}
-              scenario={scenario}
-              onScenarioChange={setScenario}
-              applyInterventions={applyInterventions}
-              onApplyInterventionsChange={setApplyInterventions}
-              onRun={() => submit()}
-              onCancel={() => void runner.cancel()}
-              busy={runner.active}
-              fieldErrors={runner.state.fieldErrors}
-              formError={
-                runner.state.status === "failed" ? null : runner.state.error
-              }
-            />
-          </div>
-        </div>
-
-        <div className="mt-5 xl:mt-6">
-          <RunStatus
-            run={run}
-            attempt={{
-              status: runner.state.status,
-              runId: runner.state.runId,
-              progress: runner.state.progress,
-              error: runner.state.status === "failed" ? runner.state.error : null,
-            }}
+      <main className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="absolute inset-0">
+          <OmniverseViewer
+            runId={run?.run_id ?? null}
+            config={streamConfig}
+            state={shown}
+            onStateChange={setState}
+            hasAfter={hasAfter}
+            onStatusChange={setViewerStatus}
+            bottomInset={peekHeight}
+            topRight={
+              <button
+                ref={scenarioButtonRef}
+                type="button"
+                aria-expanded={scenarioOpen}
+                aria-controls="scenario-drawer"
+                onClick={() => (scenarioOpen ? closeScenario() : setScenarioOpen(true))}
+                className="flex items-center gap-2 rounded-[12px] bg-accent px-3 py-2 text-[13px] font-semibold text-accent-ink shadow-[var(--shadow-card)] transition-colors hover:bg-accent-hover"
+              >
+                <Icon name="sliders" />
+                Scenario
+                {runner.active ? (
+                  <span aria-label="Run in progress" className="breathe size-2 rounded-full bg-accent-ink" />
+                ) : null}
+              </button>
+            }
           />
         </div>
 
-        {run && run.before ? (
-          <>
-            <div className="mt-5 grid gap-5 xl:mt-6 xl:gap-6">
+        <ScenarioDrawer open={scenarioOpen} onClose={closeScenario} bottomInset={peekHeight}>
+          <ScenarioControls
+            catalog={scenarios}
+            scenario={scenario}
+            onScenarioChange={setScenario}
+            applyInterventions={applyInterventions}
+            onApplyInterventionsChange={setApplyInterventions}
+            onRun={() => submit()}
+            onCancel={() => void runner.cancel()}
+            busy={runner.active}
+            fieldErrors={runner.state.fieldErrors}
+            formError={
+              runner.state.status === "failed" ? null : runner.state.error
+            }
+          />
+          <RunStatus run={run} attempt={attempt} />
+        </ScenarioDrawer>
+
+        <ResultsDrawer
+          run={run}
+          state={shown}
+          hasAfter={hasAfter}
+          onStateChange={setState}
+          attempt={{ status: runner.state.status, active: runner.active }}
+          upstreamError={bootstrap.upstreamError}
+          expanded={resultsOpen}
+          onExpandedChange={setResultsOpen}
+          onPeekHeight={setPeekHeight}
+        >
+          {bootstrap.upstreamError ? (
+            <Card className="border-[color:var(--negative)]/40 bg-negative-soft">
+              <CardHeader
+                eyebrow="Backend"
+                title="The configured backend is unreachable"
+                description={bootstrap.upstreamError}
+              />
+              <p className="mt-3 text-[12px] leading-relaxed text-ink-2">
+                No results are shown, because showing recorded numbers here would
+                misrepresent them as live output.
+              </p>
+            </Card>
+          ) : null}
+
+          {run && arm ? (
+            <Card>
+              <CardHeader
+                eyebrow="Human impact"
+                title="Headline metrics"
+                description="Population-weighted results for the state shown in the viewport."
+                actions={
+                  <Pill tone={shown === "after" ? "accent" : "neutral"}>
+                    {shown === "after" ? "After intervention" : "Before (baseline)"}
+                  </Pill>
+                }
+              />
+              <MetricGrid
+                className="mt-5 lg:grid-cols-4"
+                metrics={arm.metrics}
+                comparison={other?.metrics}
+                state={shown}
+              />
+            </Card>
+          ) : null}
+
+          <RunStatus run={run} attempt={attempt} />
+
+          {run && run.before ? (
+            <>
               {run.after && Object.keys(run.intervention ?? {}).length > 0 ? (
-                <div ref={impactRef} className="scroll-mt-6">
+                <div ref={impactRef} className="scroll-mt-4">
                   <AdvisorImpactSummary
                     before={run.before.metrics}
                     after={run.after.metrics}
@@ -255,47 +300,55 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
                   </div>
                 </details>
               ) : null}
-            </div>
-
-            <div className="mt-5 grid gap-5 xl:mt-6 xl:gap-6">
               <CitizenInspector
                 key={`${run.run_id}-${shown}`}
                 runId={run.run_id}
                 state={shown}
                 hasAfter={hasAfter}
               />
-            </div>
-          </>
-        ) : null}
+            </>
+          ) : null}
 
-        {!run && !bootstrap.upstreamError ? (
-          <Card className="mt-6">
-            <CardHeader
-              eyebrow="No results"
-              title="No run is loaded"
-              description="Choose a scenario and run a simulation to populate the dashboard."
-            />
-          </Card>
-        ) : null}
+          {!run && !bootstrap.upstreamError ? (
+            <Card>
+              <CardHeader
+                eyebrow="No results"
+                title="No run is loaded"
+                description="Open Scenario and run a simulation to populate these results."
+              />
+            </Card>
+          ) : null}
 
-        <div className="mt-5 xl:mt-6">
           <Disclosures
             health={health}
             city={run?.city}
             stage={run?.artifacts?.omniverse_stage}
           />
-        </div>
 
-        {health.mode === "mock" ? (
-          <StateTester
-            busy={runner.active}
-            onFail={() => submit({ debugFail: true })}
-            onCancelMidRun={() => {
-              submit();
-              setTimeout(() => void runner.cancel(), 900);
-            }}
-          />
-        ) : null}
+          {health.mode === "mock" ? (
+            <StateTester
+              busy={runner.active}
+              onFail={() => submit({ debugFail: true })}
+              onCancelMidRun={() => {
+                submit();
+                setTimeout(() => void runner.cancel(), 900);
+              }}
+            />
+          ) : null}
+        </ResultsDrawer>
+
+        {/* Dim the city behind an expanded sheet on small screens only, where
+            the sheet covers most of it anyway; tapping returns to the city. */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden
+          onClick={() => setResultsOpen(false)}
+          className={cx(
+            "absolute inset-0 z-10 bg-black/20 transition-opacity sm:hidden",
+            resultsOpen ? "opacity-100" : "pointer-events-none opacity-0",
+          )}
+        />
       </main>
     </div>
   );

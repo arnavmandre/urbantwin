@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { HazardToolbar } from "@/components/HazardToolbar";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Icon } from "@/components/ui/Icon";
 import { Dot, Pill } from "@/components/ui/Pill";
 import { cx } from "@/lib/cx";
 import { VIDEO_ELEMENT_ID } from "@/lib/viewer/kit-webrtc-adapter";
@@ -14,7 +16,6 @@ import {
 } from "@/lib/viewer";
 import {
   VIEW_CAMERAS,
-  VIEW_OVERLAYS,
   type RunState,
   type StreamConfig,
   type ViewCamera,
@@ -23,12 +24,6 @@ import {
   type ViewPlayback,
 } from "@/lib/types";
 
-const OVERLAY_LABELS: Record<ViewOverlay, string> = {
-  behavior: "Behavior",
-  congestion: "Routes only",
-  shade: "Shade canopy",
-  none: "City only",
-};
 /**
  * The Omniverse viewport.
  *
@@ -39,6 +34,10 @@ const OVERLAY_LABELS: Record<ViewOverlay, string> = {
  * else in the dashboard.
  *
  * Mounted client-only: WebRTC and media APIs do not exist during SSR.
+ *
+ * It fills whatever box its parent gives it and floats its controls over the
+ * picture. The parent must keep it mounted at a stable position: remounting
+ * tears down the WebRTC session.
  */
 export function OmniverseViewer({
   runId,
@@ -46,6 +45,9 @@ export function OmniverseViewer({
   state,
   onStateChange,
   hasAfter,
+  onStatusChange,
+  topRight,
+  bottomInset = 0,
   className,
 }: {
   runId: string | null;
@@ -53,6 +55,12 @@ export function OmniverseViewer({
   state: RunState;
   onStateChange: (state: RunState) => void;
   hasAfter: boolean;
+  /** Reports the real connection state, so chrome elsewhere never guesses. */
+  onStatusChange?: (status: ViewerState["status"]) => void;
+  /** Rendered at the end of the top-right control cluster. */
+  topRight?: ReactNode;
+  /** Height in px of chrome covering the bottom edge (the results peek). */
+  bottomInset?: number;
   className?: string;
 }) {
   const adapter = useMemo(() => selectViewerAdapter(config), [config]);
@@ -69,7 +77,15 @@ export function OmniverseViewer({
   const automaticRetriesRef = useRef(0);
   const runIdRef = useRef<string | null>(runId);
   const commandedRunIdRef = useRef<string | null>(runId);
-  runIdRef.current = runId;
+  const commandedStateRef = useRef<RunState>(state);
+
+  useEffect(() => {
+    runIdRef.current = runId;
+  }, [runId]);
+
+  useEffect(() => {
+    onStatusChange?.(viewer.status);
+  }, [onStatusChange, viewer.status]);
 
   // Do NOT depend on runId: a finished simulation must not tear down WebRTC.
   useEffect(() => {
@@ -182,134 +198,138 @@ export function OmniverseViewer({
     if (!connected || !runId || commandedRunIdRef.current === runId) return;
     commandedRunIdRef.current = runId;
     setPlayback("play");
+    commandedStateRef.current = state;
     void sendCommand({ state, camera, overlay, playback: "restart" });
   }, [camera, connected, overlay, runId, sendCommand, state]);
+
+  // Before/After is owned by the dashboard and can change from the results
+  // panel as well as from here; whichever control moved it, Kit follows.
+  useEffect(() => {
+    if (commandedStateRef.current === state) return;
+    commandedStateRef.current = state;
+    void sendCommand({ state, camera, overlay, playback });
+  }, [camera, overlay, playback, sendCommand, state]);
 
   return (
     <div
       className={cx(
-        "flex flex-col overflow-hidden rounded-[18px] border border-hairline bg-surface shadow-[var(--shadow-card)]",
+        "relative size-full overflow-hidden bg-canvas-tint",
         className,
       )}
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline px-4 py-3">
-        <StatusChip status={viewer.status} />
-        <p className="text-[13px] font-semibold tracking-[-0.01em] text-ink">
-          Omniverse RTX viewport
-        </p>
-        <div className="ml-auto flex items-center gap-2">
-          <SegmentedControl
-            ariaLabel="Simulation state shown in the viewport"
-            size="sm"
-            value={state}
-            onChange={(next) => {
-              onStateChange(next);
-              void sendCommand({ state: next, camera, overlay, playback });
+      <Backdrop />
+      {/*
+        Always mounted, and carrying the id the Kit streaming client binds to.
+        AppStreamer attaches its mouse / wheel / keyboard forwarding to this
+        exact element, so it must (a) exist before connect() runs and (b) be
+        the element the user actually clicks. Drag to orbit, scroll to zoom.
+
+        object-contain, never object-cover: the 1280x720 stream is letterboxed
+        into whatever shape the workspace has instead of being cropped (cover
+        used to cut off the top of the frame).
+      */}
+      <video
+        id={VIDEO_ELEMENT_ID}
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        tabIndex={0}
+        aria-label="Omniverse RTX viewport. Drag to orbit, scroll to zoom."
+        className={cx(
+          "absolute inset-0 size-full object-contain outline-none",
+          connected
+            ? "cursor-grab active:cursor-grabbing"
+            : "pointer-events-none opacity-0",
+        )}
+      />
+      {!connected && (
+        <div
+          className="absolute inset-x-0 top-0 grid place-items-center p-6 pt-24"
+          style={{ bottom: bottomInset }}
+        >
+          <ViewerStatePanel
+            viewer={viewer}
+            adapterName={adapter.displayName}
+            onRetry={() => {
+              automaticRetriesRef.current = 0;
+              setAttempt((n) => n + 1);
             }}
-            segments={[
-              { value: "before", label: "Before" },
-              {
-                value: "after",
-                label: "After",
-                disabled: !hasAfter,
-                title: hasAfter
-                  ? undefined
-                  : "This run has no intervention arm to show.",
-              },
-            ]}
           />
+        </div>
+      )}
+
+      {/* Floating chrome. The layer itself ignores the pointer so the stream
+          stays draggable between controls; each control opts back in. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-start justify-between gap-2 p-3 sm:p-4">
+        <HazardToolbar
+          overlay={overlay}
+          onOverlayChange={(next) => {
+            setOverlay(next);
+            void sendCommand({ state, camera, overlay: next, playback });
+          }}
+        />
+
+        <div className="pointer-events-auto ml-auto flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-2 rounded-[12px] border border-hairline bg-surface/95 p-1 pl-2 shadow-[var(--shadow-card)]">
+            <StatusChip status={viewer.status} />
+            <SegmentedControl
+              ariaLabel="Simulation state shown in the viewport"
+              size="sm"
+              value={state}
+              onChange={onStateChange}
+              segments={[
+                { value: "before", label: "Before" },
+                {
+                  value: "after",
+                  label: "After",
+                  disabled: !hasAfter,
+                  title: hasAfter
+                    ? undefined
+                    : "This run has no intervention arm to show.",
+                },
+              ]}
+            />
+            <label className="flex items-center gap-1.5 pr-1 text-[12px] text-ink-2">
+              <span className="sr-only sm:not-sr-only text-ink-3">Camera</span>
+              <select
+                value={camera}
+                onChange={(event) => {
+                  const next = event.target.value as ViewCamera;
+                  setCamera(next);
+                  void sendCommand({ state, camera: next, overlay, playback });
+                }}
+                className="rounded-[8px] border border-hairline bg-surface-2 px-2 py-1 text-[12px] text-ink"
+              >
+                {VIEW_CAMERAS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {topRight}
         </div>
       </div>
 
-      {/*
-        Fixed 16:9 to match the 1280x720 stream. It used to stretch to whatever
-        height the layout gave it and `object-cover` then cropped the picture to
-        fill (the top of the frame, including overlays, was cut off).
-      */}
-      <div className="relative aspect-video w-full bg-black">
-        <Backdrop />
-        {/*
-          Always mounted, and carrying the id the Kit streaming client binds to.
-          AppStreamer attaches its mouse / wheel / keyboard forwarding to this
-          exact element, so it must (a) exist before connect() runs and (b) be
-          the element the user actually clicks. Drag to orbit, scroll to zoom.
-        */}
-        <video
-          id={VIDEO_ELEMENT_ID}
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          tabIndex={0}
-          aria-label="Omniverse RTX viewport. Drag to orbit, scroll to zoom."
-          className={cx(
-            "absolute inset-0 size-full bg-black object-contain outline-none",
-            connected
-              ? "cursor-grab active:cursor-grabbing"
-              : "pointer-events-none opacity-0",
-          )}
-        />
-        {!connected && (
-          <div className="absolute inset-0 grid place-items-center p-6">
-            <ViewerStatePanel
-              viewer={viewer}
-              adapterName={adapter.displayName}
-              onRetry={() => {
-                automaticRetriesRef.current = 0;
-                setAttempt((n) => n + 1);
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-hairline px-4 py-3">
-        <label className="flex items-center gap-2 text-[12px] text-ink-2">
-          <span className="text-ink-3">Camera</span>
-          <select
-            value={camera}
-            onChange={(event) => {
-              const next = event.target.value as ViewCamera;
-              setCamera(next);
-              void sendCommand({ state, camera: next, overlay, playback });
-            }}
-            className="rounded-[8px] border border-hairline bg-surface-2 px-2 py-1 text-[12px] text-ink"
-          >
-            {VIEW_CAMERAS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex items-center gap-2 text-[12px] text-ink-2">
-          <span className="text-ink-3">Overlay</span>
-          <select
-            value={overlay}
-            onChange={(event) => {
-              const next = event.target.value as ViewOverlay;
-              setOverlay(next);
-              void sendCommand({ state, camera, overlay: next, playback });
-            }}
-            className="rounded-[8px] border border-hairline bg-surface-2 px-2 py-1 text-[12px] text-ink"
-            title="Shade canopy shows the proposed ADD_SHADE intervention. Pick Camera separately (Street is a good angle)."
-          >
-            {VIEW_OVERLAYS.map((option) => (
-              <option key={option} value={option}>
-                {OVERLAY_LABELS[option]}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="flex items-center gap-1.5" aria-label="Animation playback">
-          <span className="mr-1 text-[12px] text-ink-3">Animation</span>
+      <div
+        className="pointer-events-none absolute inset-x-0 flex flex-wrap items-end gap-2 px-3 pb-3 sm:px-4"
+        style={{ bottom: bottomInset }}
+      >
+        <div
+          className="pointer-events-auto flex items-center gap-1 rounded-[12px] border border-hairline bg-surface/95 p-1 shadow-[var(--shadow-card)]"
+          role="group"
+          aria-label="Animation playback"
+        >
+          <span className="px-1.5 text-[11px] text-ink-3">Animation</span>
           {(["play", "pause", "restart"] as const).map((action) => (
             <button
               key={action}
               type="button"
               disabled={!connected}
+              aria-label={`${action[0].toUpperCase()}${action.slice(1)} animation`}
+              aria-pressed={action === "restart" ? undefined : playback === action}
               onClick={() => {
                 setPlayback(action === "pause" ? "pause" : "play");
                 void sendCommand({
@@ -320,33 +340,37 @@ export function OmniverseViewer({
                 });
               }}
               className={cx(
-                "rounded-[8px] border px-2 py-1 text-[11px] font-semibold capitalize transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                "grid size-7 place-items-center rounded-[8px] border transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                 (action === "pause" ? playback === "pause" : action === "play" ? playback === "play" : false)
                   ? "border-accent-line bg-accent-soft text-accent"
-                  : "border-hairline bg-surface-2 text-ink-2 hover:bg-surface-3",
+                  : "border-transparent text-ink-2 hover:bg-surface-2",
               )}
             >
-              {action}
+              <Icon name={action} className="size-3.5" />
             </button>
           ))}
+          <span className="hidden px-1.5 text-[11px] text-ink-3 lg:inline">
+            {adapter.transportLabel}
+          </span>
         </div>
 
-        <p className="ml-auto text-[11px] text-ink-3">{adapter.transportLabel}</p>
+        {commandResult ? (
+          <p
+            role="status"
+            className="pointer-events-auto max-w-[min(560px,100%)] rounded-[10px] border border-hairline bg-surface/95 px-3 py-1.5 text-[11px] leading-relaxed text-ink-3 shadow-[var(--shadow-card)]"
+          >
+            View command{" "}
+            <span className="font-mono text-ink-2">
+              {commandResult.command.state}/{commandResult.command.camera}/
+              {commandResult.command.overlay}
+              /{commandResult.command.playback}
+            </span>{" "}
+            {commandResult.accepted ? "passed the server allow-list" : "was rejected"}
+            {commandResult.delivered ? " and was sent to Kit." : "; not delivered. "}
+            {commandResult.reason}
+          </p>
+        ) : null}
       </div>
-
-      {commandResult ? (
-        <p className="border-t border-hairline bg-surface-2 px-4 py-2 text-[11px] leading-relaxed text-ink-3">
-          View command{" "}
-          <span className="font-mono text-ink-2">
-            {commandResult.command.state}/{commandResult.command.camera}/
-            {commandResult.command.overlay}
-            /{commandResult.command.playback}
-          </span>{" "}
-          {commandResult.accepted ? "passed the server allow-list" : "was rejected"}
-          {commandResult.delivered ? " and was delivered." : "; not delivered. "}
-          {commandResult.reason}
-        </p>
-      ) : null}
     </div>
   );
 }

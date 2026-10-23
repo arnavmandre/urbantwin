@@ -1,16 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
-import { Dot, Pill } from "@/components/ui/Pill";
+import { Icon } from "@/components/ui/Icon";
+import { Dot, Pill, type PillTone } from "@/components/ui/Pill";
 import type { Health } from "@/lib/types";
+import type { ViewerState } from "@/lib/viewer";
+
+const VIEWPORT_STATUS: Record<
+  ViewerState["status"],
+  { tone: PillTone; label: string; color: string }
+> = {
+  idle: { tone: "neutral", label: "Viewport idle", color: "var(--ink-4)" },
+  connecting: { tone: "caution", label: "Viewport connecting", color: "var(--caution)" },
+  connected: { tone: "positive", label: "Viewport live", color: "var(--positive)" },
+  offline: { tone: "neutral", label: "Viewport offline", color: "var(--ink-4)" },
+  failed: { tone: "negative", label: "Viewport failed", color: "var(--negative)" },
+};
 
 /**
- * The header carries the single most important claim on the page: whether
- * anything here is live. It reads only `/api/health`, never a build flag.
+ * Compact top bar. It carries the two claims that matter most: whether the
+ * backend is live (read only from `/api/health`) and whether the 3D stream is
+ * actually connected (read from the WebRTC adapter's own state, not from the
+ * TCP probe, which reports a stale listener as "online").
  */
-export function SiteHeader({ health }: { health: Health }) {
+export function SiteHeader({
+  health,
+  viewerStatus,
+  sceneLabel,
+}: {
+  health: Health;
+  viewerStatus: ViewerState["status"];
+  sceneLabel: string;
+}) {
   const [open, setOpen] = useState(false);
+  const fullscreen = useFullscreen();
 
   const live = health.mode === "live" && health.capabilities.live_simulation;
   const tone = live ? "positive" : health.status === "offline" ? "negative" : "caution";
@@ -20,24 +44,32 @@ export function SiteHeader({ health }: { health: Health }) {
       : live
         ? "Live backend"
         : "Recorded data";
+  const viewport = VIEWPORT_STATUS[viewerStatus];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-hairline glass">
-      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 sm:px-8">
-        <div className="flex min-w-0 items-center gap-3">
+    <header className="relative z-40 shrink-0 border-b border-hairline bg-surface">
+      <div className="flex items-center gap-x-3 px-3 py-2 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <Mark />
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold tracking-[-0.02em] text-ink">
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-[14px] font-semibold tracking-[-0.02em] text-ink">
               Argus AI
             </p>
-            <p className="truncate text-[12px] text-ink-3">
+            <p className="hidden truncate text-[11px] text-ink-3 lg:block">
               Simulate the human experience before building the city
             </p>
           </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          <Pill tone={tone}>
+        <span
+          className="hidden min-w-0 truncate rounded-[8px] border border-hairline px-2 py-1 text-[11.5px] text-ink-2 md:inline"
+          title="Scene shown in the viewport"
+        >
+          {sceneLabel}
+        </span>
+
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <Pill tone={tone} title={label}>
             <Dot
               color={
                 live
@@ -47,24 +79,48 @@ export function SiteHeader({ health }: { health: Health }) {
                     : "var(--caution)"
               }
             />
-            {label}
+            <span className="hidden sm:inline">{label}</span>
+            <span className="sr-only sm:hidden">{label}</span>
           </Pill>
-          <Pill tone={health.omniverse_stream === "online" ? "positive" : "neutral"}>
-            Omniverse stream {health.omniverse_stream}
+          <Pill tone={viewport.tone} title={viewport.label}>
+            <Dot
+              color={viewport.color}
+              className={viewerStatus === "connecting" ? "breathe" : undefined}
+            />
+            <span className="hidden sm:inline">{viewport.label}</span>
+            <span className="sr-only sm:hidden">{viewport.label}</span>
           </Pill>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            className="rounded-full border border-hairline px-3 py-1 text-[11px] font-semibold text-ink-2 transition-colors hover:text-ink"
+            aria-controls="status-panel"
+            className="flex items-center gap-1.5 rounded-full border border-hairline px-2.5 py-1 text-[11px] font-semibold text-ink-2 transition-colors hover:text-ink"
           >
-            {open ? "Hide status" : "What is live?"}
+            <Icon name="info" className="size-3.5" />
+            <span className="hidden sm:inline">{open ? "Hide status" : "What is live?"}</span>
+            <span className="sr-only sm:hidden">What is live?</span>
           </button>
+          {fullscreen.supported ? (
+            <button
+              type="button"
+              onClick={fullscreen.toggle}
+              aria-pressed={fullscreen.active}
+              aria-label={fullscreen.active ? "Exit fullscreen" : "Enter fullscreen"}
+              title={fullscreen.active ? "Exit fullscreen" : "Fullscreen"}
+              className="grid size-7 place-items-center rounded-full border border-hairline text-ink-2 transition-colors hover:text-ink"
+            >
+              <Icon name={fullscreen.active ? "collapse" : "expand"} className="size-3.5" />
+            </button>
+          ) : null}
         </div>
       </div>
 
       {open ? (
-        <div className="border-t border-hairline bg-surface">
+        <div
+          id="status-panel"
+          className="absolute inset-x-0 top-full max-h-[70dvh] overflow-y-auto border-b border-hairline bg-surface shadow-[var(--shadow-lift)]"
+        >
           <div className="mx-auto max-w-[1560px] px-5 py-4 sm:px-8">
             <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               <div>
@@ -82,6 +138,14 @@ export function SiteHeader({ health }: { health: Health }) {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-3 text-[12px] text-ink-2">
+                  Kit signaling probe: {health.omniverse_stream}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-ink-3">
+                  The probe is only a TCP connect, so a stale listener reads as
+                  online. The viewport status in the bar is the WebRTC
+                  connection itself.
+                </p>
               </div>
               <div className="sm:col-span-1 lg:col-span-2">
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">
@@ -106,13 +170,42 @@ export function SiteHeader({ health }: { health: Health }) {
   );
 }
 
+/** Standard Fullscreen API on the whole app, so the drawers stay usable. */
+function subscribeFullscreen(onChange: () => void) {
+  document.addEventListener("fullscreenchange", onChange);
+  return () => document.removeEventListener("fullscreenchange", onChange);
+}
+
+function useFullscreen() {
+  const supported = useSyncExternalStore(
+    subscribeFullscreen,
+    () => Boolean(document.fullscreenEnabled),
+    () => false,
+  );
+  const active = useSyncExternalStore(
+    subscribeFullscreen,
+    () => document.fullscreenElement !== null,
+    () => false,
+  );
+
+  const toggle = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined);
+    } else {
+      void document.documentElement.requestFullscreen().catch(() => undefined);
+    }
+  };
+
+  return { supported, active, toggle };
+}
+
 function Mark() {
   return (
     <span
       aria-hidden
-      className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-accent text-accent-ink"
+      className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-accent text-accent-ink"
     >
-      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" strokeWidth="1.8">
+      <svg viewBox="0 0 24 24" className="size-[16px]" fill="none" strokeWidth="1.8">
         <path
           d="M4 20V9.5L12 4l8 5.5V20"
           stroke="currentColor"

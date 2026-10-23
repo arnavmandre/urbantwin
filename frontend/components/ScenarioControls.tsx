@@ -33,6 +33,7 @@ export function ScenarioControls({
   busy,
   fieldErrors,
   formError,
+  className,
 }: {
   catalog: ScenarioCatalog;
   scenario: ScenarioInput;
@@ -44,13 +45,14 @@ export function ScenarioControls({
   busy: boolean;
   fieldErrors: Partial<Record<ScenarioField, string>>;
   formError: string | null;
+  className?: string;
 }) {
   const activePreset = catalog.presets.find((preset) =>
     FIELD_ORDER.every((field) => preset[field] === scenario[field]),
   );
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader
         eyebrow="Scenario"
         title="Simulation controls"
@@ -88,7 +90,8 @@ export function ScenarioControls({
         })}
       </div>
 
-      <div className="mt-5 space-y-5 2xl:grid 2xl:grid-cols-2 2xl:gap-x-5 2xl:gap-y-4 2xl:space-y-0">
+      {/* One column at every width: the controls live in a fixed-width drawer. */}
+      <div className="mt-5 space-y-5">
         {FIELD_ORDER.map((field) => (
           <ScenarioSlider
             key={field}
