@@ -34,10 +34,13 @@ const STARTERS = [
 export function AdvisorChat({
   runId,
   busy,
+  attemptStatus,
   onApply,
 }: {
   runId: string;
   busy: boolean;
+  /** Status of the latest run attempt, so a failed or cancelled re-run clears its pending comparison. */
+  attemptStatus: string;
   onApply: (ids: RecommendationId[]) => void;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -46,12 +49,25 @@ export function AdvisorChat({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seenRun, setSeenRun] = useState(runId);
+  // Actions applied from this chat whose re-run has not reported back yet.
+  const [pendingApply, setPendingApply] = useState<RecommendationId[] | null>(null);
+  const [autoCompare, setAutoCompare] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
-  // A new run arrived (e.g. after Apply & re-run): mark it in the thread; the backend injects its facts.
+  // A new run arrived: mark it in the thread (the backend injects its facts). If it is the re-run of
+  // an action applied here, ask the advisor straight away what changed.
   if (seenRun !== runId) {
     setSeenRun(runId);
-    if (messages.length > 0) {
+    if (pendingApply) {
+      const applied = pendingApply.map((id) => ACTION_LABELS[id]).join(" + ");
+      setPendingApply(null);
+      setMessages((prev) => [...prev, { role: "note", text: `Re-run ${runId} with ${applied} finished.` }]);
+      setAutoCompare(
+        `I applied ${applied} and the re-run finished. What improved and what got worse, compared with the ` +
+          "previous run and with this run's own baseline (before arm)? Use the numbers, and say whether you " +
+          "would keep it.",
+      );
+    } else if (messages.length > 0) {
       setMessages((prev) => [
         ...prev,
         { role: "note", text: `New run ${runId} finished. Ask the advisor how it compares.` },
@@ -67,6 +83,7 @@ export function AdvisorChat({
     async (text: string) => {
       const message = text.trim();
       if (!message || sending) return;
+      setAutoCompare(null); // a queued automatic comparison is being sent now (or superseded by the planner)
       setInput("");
       setError(null);
       setMessages((prev) => [...prev, { role: "planner", text: message }]);
@@ -82,6 +99,35 @@ export function AdvisorChat({
       }
     },
     [runId, sending, sessionId],
+  );
+
+  // A re-run started from here that failed or was cancelled must not leave a pending comparison
+  // behind for some later, unrelated run.
+  const [seenStatus, setSeenStatus] = useState(attemptStatus);
+  if (seenStatus !== attemptStatus) {
+    setSeenStatus(attemptStatus);
+    if (pendingApply && (attemptStatus === "failed" || attemptStatus === "cancelled")) {
+      setPendingApply(null);
+      setMessages((prev) => [
+        ...prev,
+        { role: "note", text: `The re-run ${attemptStatus === "failed" ? "failed" : "was cancelled"}, so there is nothing new to compare.` },
+      ]);
+    }
+  }
+
+  useEffect(() => {
+    // Sending the comparison request is the external sync this effect exists for; the state updates
+    // inside send() are that request's own lifecycle (thinking indicator, reply), not derived state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (autoCompare && !sending) void send(autoCompare);
+  }, [autoCompare, send, sending]);
+
+  const apply = useCallback(
+    (ids: RecommendationId[]) => {
+      setPendingApply(ids);
+      onApply(ids);
+    },
+    [onApply],
   );
 
   return (
@@ -126,7 +172,7 @@ export function AdvisorChat({
               </p>
             </div>
           ) : (
-            <AdvisorTurn key={index} response={message.response} busy={busy} onApply={onApply} />
+            <AdvisorTurn key={index} response={message.response} busy={busy} onApply={apply} />
           ),
         )}
 

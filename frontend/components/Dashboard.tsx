@@ -339,6 +339,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
                   <AdvisorChat
                     runId={run.run_id}
                     busy={runner.active}
+                    attemptStatus={runner.state.status}
                     onApply={(selectedRecommendationIds) =>
                       submit({ forceApply: true, selectedRecommendationIds })
                     }

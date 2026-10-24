@@ -39,6 +39,7 @@ human-centric city digital twin. Rules:
 - If the planner suggests something the simulator cannot test (e.g. new buildings, traffic signals), say it
   cannot be simulated here, and offer the closest testable action only if it genuinely fits.
 - An "after" arm means the same citizens re-simulated with the applied intervention.
+- When comparing runs, report the effect honestly: if an action barely moved the metrics, say so plainly.
 - Be concise (under 150 words), plain text, no tables."""
 
 _PROPOSE = re.compile(r"^\s*PROPOSE:\s*(\{.*\})\s*$", re.MULTILINE)
