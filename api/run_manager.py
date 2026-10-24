@@ -19,9 +19,7 @@ from integration.run_pipeline import (
 )
 
 from api.shapes import live_citizen_page, live_run_summary
-
-DEFAULT_CITIZENS = Path("Simulation/citizens_survey_city_osm.json")
-DEFAULT_CITY = Path("Simulation/city_osm.json")
+from integration.cities import city_profile
 
 # Placeholder report so queued/running/failed summaries can reuse live_run_summary
 # before (or without) a real simulation_report.json on disk.
@@ -237,6 +235,7 @@ class RunManager:
             status=record["status"],
             has_report=has_report,
             error=record.get("error"),
+            city=record["request"].get("city"),
         )
         summary["progress"] = self._progress_unlocked(record)
         return summary
@@ -291,6 +290,7 @@ class RunManager:
                 "created_utc": record["created_utc"],
                 "finished_utc": _utc_now(),
                 "scenario": dict(record["scenario"]),
+                "city": record["request"].get("city", "london"),
                 "error_code": error.get("code"),
                 "error_message": (error.get("message") or "")[:500] or None,
             }
@@ -322,11 +322,13 @@ class RunManager:
             request = dict(record["request"])
             cancel_flag = self._cancel_flags.get(run_id)
 
+        profile = city_profile(request.get("city"))
         config = PipelineConfig(
             root=self.root,
             run_id=run_id,
-            citizens=DEFAULT_CITIZENS,
-            city=DEFAULT_CITY,
+            citizens=Path(profile["citizens"]),
+            city=Path(profile["city_file"]),
+            city_key=profile["key"],
             temperature=float(request["temperature"]),
             humidity=float(request["humidity"]),
             rainfall=float(request["rainfall"]),
@@ -398,8 +400,12 @@ class RunManager:
             record["status"] = "cancelled"
 
     def _subprocess_pipeline(self, config: PipelineConfig) -> dict:
-        """Default engine: Phase 11 CLI in a child process so cancel can kill it."""
-        script = self.root / "integration" / "run_pipeline.py"
+        """Default engine: the city's pipeline CLI in a child process so cancel can kill it.
+
+        London runs integration/run_pipeline.py (Phase 11); Pune runs cities/pune/run_pune.py, which
+        takes the same flags and writes the same data/runs/<run_id>/ layout.
+        """
+        script = self.root / city_profile(config.city_key)["pipeline"]
         command = [
             sys.executable,
             str(script),

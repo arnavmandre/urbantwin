@@ -1,6 +1,8 @@
 """Request validation for the UrbanTwin Python HTTP API."""
 from __future__ import annotations
 
+from integration.cities import CITIES, DEFAULT_CITY
+
 CONSTRAINTS = {
     "temperature": (-10, 45),
     "humidity": (20, 90),
@@ -122,6 +124,12 @@ def validate_run_request(body: dict) -> tuple[dict | None, dict | None]:
             )
     else:
         normalized["animation_duration_seconds"] = DEFAULT_ANIMATION_DURATION_SECONDS
+
+    city = body.get("city", DEFAULT_CITY)
+    if city not in CITIES:
+        fields["city"] = f"must be one of {sorted(CITIES)}"
+    else:
+        normalized["city"] = city
 
     if fields:
         return None, _validation_error("One or more fields failed validation.", fields)

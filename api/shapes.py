@@ -72,6 +72,7 @@ def live_run_summary(
     warnings=None,
     has_report=None,
     error=None,
+    city=None,
 ) -> dict:
     """Shape a simulator report as a live RunSummary envelope."""
     if warnings is None:
@@ -86,6 +87,7 @@ def live_run_summary(
         status=status,
         warnings=warnings,
         error=error,
+        city=city,
     )
 
 

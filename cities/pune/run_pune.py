@@ -131,7 +131,10 @@ def main() -> int:
     ap.add_argument("--rainfall", type=float, required=True)
     ap.add_argument("--population", type=int, required=True)
     ap.add_argument("--intervention-id", action="append", default=[])
-    # accepted for parity with run_pipeline.py; Pune's animation length is fixed (see manifest "animation")
+    # Accepted for parity with run_pipeline.py, which api/run_manager.py always calls with them.
+    # Pune's city/citizen files and animation length are fixed (see manifest "animation").
+    ap.add_argument("--citizens", default=None)
+    ap.add_argument("--city", default=None)
     ap.add_argument("--frames", type=int, default=None)
     ap.add_argument("--duration", type=float, default=None)
     ap.add_argument("--no-publish", action="store_true")

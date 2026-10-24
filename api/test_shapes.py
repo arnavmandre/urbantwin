@@ -22,6 +22,20 @@ class ShapeTests(unittest.TestCase):
         self.assertTrue(all("Recorded fixture" not in w for w in summary["warnings"]))
         self.assertTrue(any("just-executed" in w for w in summary["warnings"]))
 
+    def test_city_facts_follow_the_run_city(self):
+        report = json.loads(
+            (ROOT / "Simulation" / "urbantwin_demo_output.json").read_text(encoding="utf-8")
+        )
+        london = live_run_summary(report, "2026-09-19T12:00:00+00:00", "r-london")
+        pune = live_run_summary(report, "2026-09-19T12:00:00+00:00", "r-pune", city="pune")
+        self.assertEqual(london["city"]["name"], "Russell Square, London")
+        self.assertEqual(london["artifacts"]["omniverse_stage"], "phase9/scene/main.usda")
+        self.assertEqual(pune["city"]["key"], "pune")
+        self.assertEqual(pune["artifacts"]["omniverse_stage"], "cities/pune/main_view_400m.usda")
+        self.assertIsNone(pune["artifacts"]["snapshot_pattern"])
+        self.assertTrue(any("Vehicles are illustrative" in s for s in pune["city"]["limitations"]))
+        self.assertFalse(any("223 of 623" in s for s in pune["city"]["limitations"]))
+
     def test_live_warnings_gated_by_status_and_report(self):
         report = json.loads(
             (ROOT / "Simulation" / "urbantwin_demo_output.json").read_text(

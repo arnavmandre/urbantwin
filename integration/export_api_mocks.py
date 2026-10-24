@@ -33,6 +33,11 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    from integration.cities import city_profile
+except ModuleNotFoundError:  # run as a script: integration/ itself is sys.path[0]
+    from cities import city_profile
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DEFAULT_REPORT = ROOT / "Simulation" / "urbantwin_demo_output.json"
@@ -132,9 +137,11 @@ def run_summary(
     status="complete",
     warnings=None,
     error=None,
+    city=None,
 ):
     before, after = report["before"], report["after"]
     control = report["control"]
+    profile = city_profile(city)
     payload = {
         "run_id": run_id,
         "status": status,
@@ -154,18 +161,21 @@ def run_summary(
             "recommendations": control["recommendations"],
         },
         "city": {
-            "name": "Russell Square, London",
+            "key": profile["key"],
+            "name": profile["name"],
             "source": "OpenStreetMap",
             "zones": len(before["zones"]),
             "simulation_buildings": len(before["buildings"]),
             "routes": len(before["routes"]),
-            "visual_buildings": 623,
-            "visual_trees": 511,
-            "rendered_agent_cap": AGENT_CAP,
+            "visual_buildings": profile["visual_buildings"],
+            "visual_trees": profile["visual_trees"],
+            # London renders through the phase3 schema cap; Pune draws every simulated citizen
+            "rendered_agent_cap": AGENT_CAP if profile["key"] == "london" else len(before["citizens"]),
+            "limitations": profile["limitations"],
         },
         "artifacts": {
-            "omniverse_stage": "phase9/scene/main.usda",
-            "snapshot_pattern": "data/simulation_before_*.json",
+            "omniverse_stage": profile["stage"],
+            "snapshot_pattern": profile["snapshot_pattern"],
         },
         "advisor_source": {
             "kind": "deterministic_rules",

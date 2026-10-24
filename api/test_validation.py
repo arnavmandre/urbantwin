@@ -19,6 +19,15 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(request["population"], 100000)
         self.assertEqual(request["animation_frames"], 3)
 
+    def test_city_defaults_to_london_accepts_pune_rejects_unknown(self):
+        base = {"temperature": 30, "humidity": 50, "rainfall": 0, "population": 50000,
+                "apply_recommended_interventions": False}
+        self.assertEqual(validate_run_request(base)[0]["city"], "london")
+        self.assertEqual(validate_run_request({**base, "city": "pune"})[0]["city"], "pune")
+        request, error = validate_run_request({**base, "city": "paris"})
+        self.assertIsNone(request)
+        self.assertIn("city", error["error"]["fields"])
+
     def test_rejects_out_of_range_temperature(self):
         body = {
             "temperature": 99,

@@ -5,11 +5,18 @@ import os
 import secrets
 import socket
 
+from integration.cities import CITIES, DEFAULT_CITY, city_profile
+
 DEFAULT_STREAM_HOST = "127.0.0.1"
 DEFAULT_SIGNAL_PORT = 49100
 # Local NVIDIA web-viewer-sample uses mediaPort: null so the client discovers
 # the Kit media port. Only set URBANTWIN_STREAM_MEDIA_PORT to override.
 DEFAULT_MEDIA_PORT = None
+
+
+def stream_city() -> str:
+    city = os.environ.get("URBANTWIN_STREAM_CITY", DEFAULT_CITY).strip().lower()
+    return city if city in CITIES else DEFAULT_CITY
 
 
 def _env_bool(name: str) -> bool:
@@ -91,7 +98,9 @@ def available_stream_config(checked_utc, probe: dict, *, source="live") -> dict:
         "ice_servers": [],
         # Local Kit has no session manager; token is for our API only.
         "session_token": secrets.token_urlsafe(24),
-        "stage": "phase9/scene/main.usda",
+        # Which city Kit was launched on (tools/demo_launch.ps1 -City sets this); the probe cannot ask Kit.
+        "city": stream_city(),
+        "stage": city_profile(stream_city())["stage"],
         "desktop_fallback": ".\\repo.bat launch -n urbantwin.kit",
         "references": [
             "https://docs.omniverse.nvidia.com/ov-web-sdk/latest/index.html",

@@ -106,6 +106,40 @@ class RunManagerTests(unittest.TestCase):
             )
             self.assertEqual(captured, [("improve_drainage",)])
 
+    def test_pune_request_targets_pune_files_and_reports_pune(self):
+        captured = []
+
+        def pipeline(config):
+            captured.append(config)
+            _write_report(config)
+            return {"status": "complete", "run_id": config.run_id}
+
+        with tempfile.TemporaryDirectory() as directory:
+            manager = RunManager(Path(directory), pipeline_fn=pipeline)
+            created = manager.create_run(_valid_request(city="pune"))
+            self.assertTrue(
+                _wait_until(lambda: manager.get_run(created["run_id"])["status"] == "complete")
+            )
+            summary = manager.get_run(created["run_id"])
+        config = captured[0]
+        self.assertEqual(config.city_key, "pune")
+        self.assertEqual(config.city, Path("cities/pune/city_pune.json"))
+        self.assertEqual(config.citizens, Path("cities/pune/citizens_pune.json"))
+        self.assertEqual(summary["city"]["key"], "pune")
+        self.assertEqual(summary["artifacts"]["omniverse_stage"], "cities/pune/main_view_400m.usda")
+
+    def test_pune_subprocess_runs_pune_pipeline_script(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = RunManager(Path(directory))
+            config = mock.Mock(city_key="pune", run_id="r1", citizens="c", city="k", temperature=1,
+                               humidity=1, rainfall=1, population=1, frames=1, duration=1,
+                               selected_recommendation_ids=())
+            proc = mock.Mock(returncode=0, communicate=mock.Mock(return_value=("", "")))
+            with mock.patch("api.run_manager.subprocess.Popen", return_value=proc) as popen:
+                manager._subprocess_pipeline(config)
+        script = Path(popen.call_args.args[0][1])
+        self.assertEqual(script.as_posix()[-len("cities/pune/run_pune.py"):], "cities/pune/run_pune.py")
+
     def test_second_create_conflicts_while_running(self):
         def slow_pipeline(config):
             time.sleep(0.2)

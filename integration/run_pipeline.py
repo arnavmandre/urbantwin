@@ -39,6 +39,7 @@ class PipelineConfig:
     duration: float = 60.0
     publish: bool = True
     selected_recommendation_ids: tuple[str, ...] = ()
+    city_key: str = "london"  # selects the pipeline script (integration/cities.py); this module runs London
 
 
 class StageResult(TypedDict):
