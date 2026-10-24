@@ -16,7 +16,7 @@ environment, not where they commute. This step is a documented trip-distribution
 heuristic; the behavioural parameters are the calibrated part.
 
 Run:
-    python phase10/assign_homes.py                         # against city_osm.json
+    python phase10/assign_homes.py                         # against the Pune city
     python phase10/assign_homes.py --city city.json        # 8-building demo
     python phase10/assign_homes.py --count 400 --out ../Simulation/citizens_survey.json
 """
@@ -40,8 +40,8 @@ REQUIRED = ("heat_tolerance", "rain_tolerance", "crowd_tolerance",
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--city", default="city_osm.json",
-                    help="city file inside Simulation/ (default: city_osm.json)")
+    ap.add_argument("--city", default="../cities/pune/city_pune.json",
+                    help="city file relative to Simulation/ (default: ../cities/pune/city_pune.json)")
     ap.add_argument("--source", type=Path, default=SOURCE)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--count", type=int, default=None,

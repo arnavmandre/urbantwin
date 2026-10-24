@@ -290,7 +290,7 @@ class RunManager:
                 "created_utc": record["created_utc"],
                 "finished_utc": _utc_now(),
                 "scenario": dict(record["scenario"]),
-                "city": record["request"].get("city", "london"),
+                "city": record["request"].get("city", "pune"),
                 "error_code": error.get("code"),
                 "error_message": (error.get("message") or "")[:500] or None,
             }
@@ -402,7 +402,7 @@ class RunManager:
     def _subprocess_pipeline(self, config: PipelineConfig) -> dict:
         """Default engine: the city's pipeline CLI in a child process so cancel can kill it.
 
-        London runs integration/run_pipeline.py (Phase 11); Pune runs cities/pune/run_pune.py, which
+        Pune runs cities/pune/run_pune.py, which
         takes the same flags and writes the same data/runs/<run_id>/ layout.
         """
         script = self.root / city_profile(config.city_key)["pipeline"]

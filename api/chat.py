@@ -50,7 +50,7 @@ def run_facts(report: dict, run_id: str, city: str | None) -> str:
     payload = build_explanation_payload(report)
     payload.pop("warnings_and_limitations", None)  # long boilerplate; rules already state the limits
     payload["applied_intervention"] = report.get("intervention") or {}
-    payload["city"] = city or "london"
+    payload["city"] = city or "pune"
     payload["run_id"] = run_id
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 

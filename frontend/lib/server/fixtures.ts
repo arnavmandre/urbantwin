@@ -46,7 +46,7 @@ export interface CitizenFixture {
   >;
 }
 
-export const RECORDED_RUN_ID = "run_20260919_001";
+export const RECORDED_RUN_ID = "run_pune_recorded";
 
 export const fixtures = {
   health: () => load<Health>("health.json"),

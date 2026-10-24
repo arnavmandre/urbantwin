@@ -1,6 +1,8 @@
 # Phase 13 — UrbanTwin streaming Kit
 
-Local streaming-enabled Kit application for the UrbanTwin Phase 9 demo stage.
+For the active Pune demo, launch from the Pune worktree with `tools/demo_launch.ps1 -City pune`; see `PUNE_CITY.md`.
+
+Local streaming-enabled Kit application. The Phase 9 stage is archival; Pune is the active demo.
 This phase does **not** change the Next.js dashboard. Browser WebRTC is Phase 14.
 
 ## Repositories / branches
@@ -21,7 +23,7 @@ C:\Users\arnav\omniverse\kit-app-template
 - `source/apps/urbantwin_streaming.kit` — streaming layer over `urbantwin.kit`
   using `omni.kit.livestream.app` (NVIDIA default Kit App Streaming).
 - `launch_urbantwin_streaming.bat` — launches with `--no-window` and loads
-  `C:\Users\arnav\Argus\phase9\scene\main.usda` via `--/app/auto_load_usd`.
+  the Pune stage selected by `URBANTWIN_STAGE` via `--/app/auto_load_usd`.
 
 NVIDIA tooling names the file `{app}_streaming.kit`. Argus design docs may say
 `urbantwin.streaming.kit`; they mean this file.
@@ -46,7 +48,7 @@ Equivalent manual command:
 
 ```powershell
 .\repo.bat launch -n urbantwin_streaming.kit -- --no-window `
-  --/app/auto_load_usd="C:\Users\arnav\Argus\phase9\scene\main.usda"
+  --/app/auto_load_usd="C:\Users\arnav\Argus\.worktrees\pune-city\cities\pune\main_view_400m.usda"
 ```
 
 `--no-window` avoids fighting the streaming client for the main window.
@@ -65,7 +67,7 @@ git clone https://github.com/NVIDIA-Omniverse/web-viewer-sample.git
 2. Follow that repo’s Quick Start for **stream only / no UI overlay**.
 3. Start the streaming Kit host first, then the sample client in a Chromium browser.
 
-You should see the Russell Square / Phase 9 stage stream from the RTX host.
+You should see the Pune stage stream from the RTX host.
 
 ## What Phase 13 alone does not add
 
@@ -80,7 +82,7 @@ View commands remain allow-listed but **undelivered** until Phase 15.
 
 ## Smoke evidence (2026-09-20)
 
-On branch `phase13-streaming-kit` in the Kit App Template:
+Archival verification on branch `phase13-streaming-kit` in the Kit App Template (not a Pune streaming check):
 
 1. `.\repo.bat build` succeeded and pulled
    `omni.kit.livestream.app` / `.core` / `.webrtc`.
@@ -99,7 +101,7 @@ Use forward slashes in `--/app/auto_load_usd` (see the launch bat).
 
 | Symptom | Check |
 |---|---|
-| Stage not found | `STAGE` path in the launch bat; file exists under `phase9/scene/main.usda` |
+| Stage not found | `STAGE` path in the launch bat; file exists under `cities/pune/main_view_400m.usda` |
 | App not listed | Rebuild after adding the `.kit`; name is `urbantwin_streaming.kit` |
 | Client cannot connect | Host launched with `--no-window`; firewall; only one stream host |
 | Empty stage | Confirm `auto_load_usd` argument was passed and path uses backslashes or forward slashes consistently |

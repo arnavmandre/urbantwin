@@ -3,7 +3,6 @@
 import { useId } from "react";
 
 import { Card, CardHeader } from "@/components/ui/Card";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { cx } from "@/lib/cx";
 import {
   SCENARIO_FIELD_META,
@@ -17,7 +16,6 @@ import type {
 } from "@/lib/types";
 
 export const CITY_LABEL: Record<CityKey, string> = {
-  london: "London",
   pune: "Pune",
 };
 
@@ -56,14 +54,9 @@ export function ScenarioControls({
   className,
   plain = false,
   city,
-  onCityChange,
-  puneAvailable,
   streamCity,
 }: {
   city: CityKey;
-  onCityChange: (city: CityKey) => void;
-  /** Pune has no recorded fixtures, so it needs the live API. */
-  puneAvailable: boolean;
   /** City the Kit stream was launched on, or null when no stream is available. */
   streamCity: CityKey | null;
   catalog: ScenarioCatalog;
@@ -95,23 +88,7 @@ export function ScenarioControls({
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <span className="text-[13px] font-medium text-ink">City</span>
-        <SegmentedControl
-          size="sm"
-          ariaLabel="City to simulate"
-          value={city}
-          onChange={onCityChange}
-          segments={[
-            { value: "london", label: CITY_LABEL.london, disabled: busy },
-            {
-              value: "pune",
-              label: CITY_LABEL.pune,
-              disabled: busy || !puneAvailable,
-              title: puneAvailable
-                ? undefined
-                : "Pune runs need the live API (URBANTWIN_API_BASE); recorded fixtures are London only.",
-            },
-          ]}
-        />
+        <span className="text-[13px] text-ink-2">Pune</span>
       </div>
       {streamCity && streamCity !== city ? (
         <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">

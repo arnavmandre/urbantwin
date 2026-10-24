@@ -1,0 +1,1186 @@
+{
+  "run_id": "run_pune_recorded",
+  "status": "complete",
+  "source": "recorded_fixture",
+  "created_utc": "2026-10-24T22:12:39+00:00",
+  "scenario": {
+    "temperature": 40,
+    "humidity": 80,
+    "rainfall": 80,
+    "population": 100000
+  },
+  "before": {
+    "metrics": {
+      "heat_stress": 79.43,
+      "cold_stress": 0.0,
+      "rain_impact": 31.05,
+      "crowding": 38.46,
+      "safety": 58.16,
+      "mobility": 63.75,
+      "comfort": 47.35,
+      "citizen_comfort": 60.6,
+      "mean_travel_minutes": 7.41,
+      "human_experience_index": 57.43
+    },
+    "behavior_counts": {
+      "CONTINUE": 178,
+      "STRESSED": 138,
+      "SEEK_SHADE": 282,
+      "SEEK_SHELTER": 0,
+      "REROUTE": 0,
+      "AVOID_AREA": 2
+    },
+    "problem_zones": [
+      "Zone A1",
+      "Heat-exposed pedestrian corridors"
+    ],
+    "problem_buildings": [
+      {
+        "id": "way_365666694",
+        "name": "way_365666694",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding",
+          "heat exposure"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_365666691",
+        "name": "way_365666691",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding",
+          "heat exposure"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1148409038",
+        "name": "way_1148409038",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_160919295",
+        "name": "Prakash Woolen Cloths",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1138184593",
+        "name": "way_1138184593",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "relation_2861672",
+        "name": "Shaniwar Wada",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_365669087",
+        "name": "Surya Sahydari Hospital",
+        "zone": "Zone B3",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1295347000",
+        "name": "Thorla Sheikh Salla Dargah",
+        "zone": "Zone B3",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1428242809",
+        "name": "way_1428242809",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_910256860",
+        "name": "Batatya Maruti",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_666675657",
+        "name": "Shrimahalakshmi Ganesh Mandir",
+        "zone": "Zone C2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_327073026",
+        "name": "Shrimant Peshwe Ganesh Mandir",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1166044263",
+        "name": "Shri Swami Samarth Complex",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_264444880",
+        "name": "Faraskhana Police Station",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_264276391",
+        "name": "Shreemant Dagdusheth Halwai Ganpati Mandir",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_243921283",
+        "name": "Pasodya Vithoba Mandir",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding",
+          "heat exposure"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_282961094",
+        "name": "City Post",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 93.75
+      },
+      {
+        "id": "way_360250723",
+        "name": "way_360250723",
+        "zone": "Zone A3",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 64.14
+      },
+      {
+        "id": "way_1166044245",
+        "name": "way_1166044245",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365675498",
+        "name": "way_365675498",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365675536",
+        "name": "way_365675536",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162394876",
+        "name": "way_1162394876",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1167906006",
+        "name": "way_1167906006",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1166044233",
+        "name": "way_1166044233",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162391338",
+        "name": "way_1162391338",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162385873",
+        "name": "way_1162385873",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162390484",
+        "name": "way_1162390484",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1166044177",
+        "name": "way_1166044177",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365675496",
+        "name": "way_365675496",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1166044232",
+        "name": "way_1166044232",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365666686",
+        "name": "way_365666686",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162437229",
+        "name": "way_1162437229",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "relation_15720643",
+        "name": "relation_15720643",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1163300656",
+        "name": "way_1163300656",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162450069",
+        "name": "way_1162450069",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162736240",
+        "name": "way_1162736240",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162737605",
+        "name": "way_1162737605",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162450068",
+        "name": "way_1162450068",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1160996821",
+        "name": "way_1160996821",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162736198",
+        "name": "way_1162736198",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      }
+    ],
+    "problem_routes": [
+      {
+        "id": "R898",
+        "from": "way_1163300656",
+        "to": "relation_2861672",
+        "via_zones": [
+          "Zone A1",
+          "Zone B1",
+          "Zone B2"
+        ],
+        "crowding": 19.55
+      },
+      {
+        "id": "R1555",
+        "from": "way_1229233887",
+        "to": "way_1428242809",
+        "via_zones": [
+          "Zone B1",
+          "Zone B2",
+          "Zone B3",
+          "Zone C3"
+        ],
+        "crowding": 17.3
+      },
+      {
+        "id": "R982",
+        "from": "way_1162737605",
+        "to": "relation_2861672",
+        "via_zones": [
+          "Zone A1",
+          "Zone B1",
+          "Zone B2"
+        ],
+        "crowding": 17.25
+      }
+    ],
+    "citizen_count": 600,
+    "interventions": {}
+  },
+  "advisor": {
+    "summary": "High heat exposure is affecting pedestrian comfort; most exposed: way_360250723 (Zone A3), way_1166044245 (Zone C1). ; Rainfall is creating meaningful safety and mobility penalties; most flood-prone: way_365666694 (Zone C1), way_365666691 (Zone C1).",
+    "problem_zones": [
+      "Zone A1",
+      "Heat-exposed pedestrian corridors"
+    ],
+    "problem_buildings": [
+      {
+        "id": "way_365666694",
+        "name": "way_365666694",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding",
+          "heat exposure"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_365666691",
+        "name": "way_365666691",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding",
+          "heat exposure"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1148409038",
+        "name": "way_1148409038",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_160919295",
+        "name": "Prakash Woolen Cloths",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1138184593",
+        "name": "way_1138184593",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "relation_2861672",
+        "name": "Shaniwar Wada",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_365669087",
+        "name": "Surya Sahydari Hospital",
+        "zone": "Zone B3",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1295347000",
+        "name": "Thorla Sheikh Salla Dargah",
+        "zone": "Zone B3",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1428242809",
+        "name": "way_1428242809",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_910256860",
+        "name": "Batatya Maruti",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_666675657",
+        "name": "Shrimahalakshmi Ganesh Mandir",
+        "zone": "Zone C2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_327073026",
+        "name": "Shrimant Peshwe Ganesh Mandir",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1166044263",
+        "name": "Shri Swami Samarth Complex",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_264444880",
+        "name": "Faraskhana Police Station",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_264276391",
+        "name": "Shreemant Dagdusheth Halwai Ganpati Mandir",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_243921283",
+        "name": "Pasodya Vithoba Mandir",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding",
+          "heat exposure"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_282961094",
+        "name": "City Post",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 93.75
+      },
+      {
+        "id": "way_360250723",
+        "name": "way_360250723",
+        "zone": "Zone A3",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 64.14
+      },
+      {
+        "id": "way_1166044245",
+        "name": "way_1166044245",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365675498",
+        "name": "way_365675498",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365675536",
+        "name": "way_365675536",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162394876",
+        "name": "way_1162394876",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1167906006",
+        "name": "way_1167906006",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1166044233",
+        "name": "way_1166044233",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162391338",
+        "name": "way_1162391338",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162385873",
+        "name": "way_1162385873",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162390484",
+        "name": "way_1162390484",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1166044177",
+        "name": "way_1166044177",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365675496",
+        "name": "way_365675496",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1166044232",
+        "name": "way_1166044232",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_365666686",
+        "name": "way_365666686",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1162437229",
+        "name": "way_1162437229",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "relation_15720643",
+        "name": "relation_15720643",
+        "zone": "Zone C1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 62.79
+      },
+      {
+        "id": "way_1163300656",
+        "name": "way_1163300656",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162450069",
+        "name": "way_1162450069",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162736240",
+        "name": "way_1162736240",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162737605",
+        "name": "way_1162737605",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162450068",
+        "name": "way_1162450068",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1160996821",
+        "name": "way_1160996821",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      },
+      {
+        "id": "way_1162736198",
+        "name": "way_1162736198",
+        "zone": "Zone A1",
+        "issues": [
+          "heat exposure"
+        ],
+        "severity": 51.99
+      }
+    ],
+    "problem_routes": [
+      {
+        "id": "R898",
+        "from": "way_1163300656",
+        "to": "relation_2861672",
+        "via_zones": [
+          "Zone A1",
+          "Zone B1",
+          "Zone B2"
+        ],
+        "crowding": 19.55
+      },
+      {
+        "id": "R1555",
+        "from": "way_1229233887",
+        "to": "way_1428242809",
+        "via_zones": [
+          "Zone B1",
+          "Zone B2",
+          "Zone B3",
+          "Zone C3"
+        ],
+        "crowding": 17.3
+      },
+      {
+        "id": "R982",
+        "from": "way_1162737605",
+        "to": "relation_2861672",
+        "via_zones": [
+          "Zone A1",
+          "Zone B1",
+          "Zone B2"
+        ],
+        "crowding": 17.25
+      }
+    ],
+    "recommendations": [
+      "increase_shade",
+      "improve_drainage"
+    ],
+    "affected_buildings": {
+      "increase_shade": [
+        "way_360250723",
+        "way_1166044245"
+      ],
+      "improve_drainage": [
+        "way_365666694",
+        "way_365666691"
+      ]
+    },
+    "explanation": [
+      "High heat exposure is affecting pedestrian comfort; most exposed: way_360250723 (Zone A3), way_1166044245 (Zone C1).",
+      "Rainfall is creating meaningful safety and mobility penalties; most flood-prone: way_365666694 (Zone C1), way_365666691 (Zone C1)."
+    ],
+    "supported_interventions": {
+      "increase_shade": {
+        "changes": {
+          "shade_boost": 0.25
+        },
+        "effect": "Reduces heat exposure and improves shaded-route attractiveness."
+      },
+      "improve_drainage": {
+        "changes": {
+          "drainage_boost": 0.35
+        },
+        "effect": "Reduces rainfall impact and improves rain-time safety and mobility."
+      },
+      "alternative_pedestrian_routes": {
+        "changes": {
+          "route_capacity_boost": 0.4
+        },
+        "effect": "Redistributes pedestrians and reduces crowding pressure."
+      }
+    }
+  },
+  "intervention": {
+    "shade_boost": 0.25,
+    "drainage_boost": 0.35
+  },
+  "after": {
+    "metrics": {
+      "heat_stress": 73.47,
+      "cold_stress": 0.0,
+      "rain_impact": 7.2,
+      "crowding": 38.43,
+      "safety": 74.86,
+      "mobility": 73.01,
+      "comfort": 55.46,
+      "citizen_comfort": 71.54,
+      "mean_travel_minutes": 7.48,
+      "human_experience_index": 68.48
+    },
+    "behavior_counts": {
+      "CONTINUE": 514,
+      "STRESSED": 67,
+      "SEEK_SHADE": 19,
+      "SEEK_SHELTER": 0,
+      "REROUTE": 0,
+      "AVOID_AREA": 0
+    },
+    "problem_zones": [
+      "Zone A1",
+      "Heat-exposed pedestrian corridors"
+    ],
+    "problem_buildings": [
+      {
+        "id": "way_365666694",
+        "name": "way_365666694",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_365666691",
+        "name": "way_365666691",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1148409038",
+        "name": "way_1148409038",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_160919295",
+        "name": "Prakash Woolen Cloths",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1138184593",
+        "name": "way_1138184593",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "relation_2861672",
+        "name": "Shaniwar Wada",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_365669087",
+        "name": "Surya Sahydari Hospital",
+        "zone": "Zone B3",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1295347000",
+        "name": "Thorla Sheikh Salla Dargah",
+        "zone": "Zone B3",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1428242809",
+        "name": "way_1428242809",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_910256860",
+        "name": "Batatya Maruti",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_666675657",
+        "name": "Shrimahalakshmi Ganesh Mandir",
+        "zone": "Zone C2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_327073026",
+        "name": "Shrimant Peshwe Ganesh Mandir",
+        "zone": "Zone B2",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_1166044263",
+        "name": "Shri Swami Samarth Complex",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_264444880",
+        "name": "Faraskhana Police Station",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_264276391",
+        "name": "Shreemant Dagdusheth Halwai Ganpati Mandir",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_243921283",
+        "name": "Pasodya Vithoba Mandir",
+        "zone": "Zone C1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 100.0
+      },
+      {
+        "id": "way_282961094",
+        "name": "City Post",
+        "zone": "Zone B1",
+        "issues": [
+          "overcrowding"
+        ],
+        "severity": 93.75
+      }
+    ],
+    "problem_routes": [
+      {
+        "id": "R898",
+        "from": "way_1163300656",
+        "to": "relation_2861672",
+        "via_zones": [
+          "Zone A1",
+          "Zone B1",
+          "Zone B2"
+        ],
+        "crowding": 19.55
+      },
+      {
+        "id": "R1555",
+        "from": "way_1229233887",
+        "to": "way_1428242809",
+        "via_zones": [
+          "Zone B1",
+          "Zone B2",
+          "Zone B3",
+          "Zone C3"
+        ],
+        "crowding": 17.3
+      },
+      {
+        "id": "R982",
+        "from": "way_1162737605",
+        "to": "relation_2861672",
+        "via_zones": [
+          "Zone A1",
+          "Zone B1",
+          "Zone B2"
+        ],
+        "crowding": 17.25
+      }
+    ],
+    "citizen_count": 600,
+    "interventions": {
+      "shade_boost": 0.25,
+      "drainage_boost": 0.35
+    }
+  },
+  "delta": {
+    "heat_stress": -5.96,
+    "cold_stress": 0.0,
+    "rain_impact": -23.85,
+    "crowding": -0.03,
+    "safety": 16.7,
+    "mobility": 9.26,
+    "comfort": 8.11,
+    "citizen_comfort": 10.94,
+    "mean_travel_minutes": 0.07,
+    "human_experience_index": 11.05
+  },
+  "control_reference": {
+    "scenario": {
+      "temperature": 26,
+      "humidity": 40,
+      "rainfall": 5,
+      "population": 30000
+    },
+    "metrics": {
+      "heat_stress": 22.34,
+      "cold_stress": 0.0,
+      "rain_impact": 1.57,
+      "crowding": 19.45,
+      "safety": 91.6,
+      "mobility": 89.29,
+      "comfort": 85.04,
+      "citizen_comfort": 88.12,
+      "mean_travel_minutes": 7.42,
+      "human_experience_index": 88.28
+    },
+    "recommendations": [
+      "no_major_intervention"
+    ]
+  },
+  "city": {
+    "key": "pune",
+    "name": "Shaniwar Wada, central Pune",
+    "source": "OpenStreetMap",
+    "zones": 9,
+    "simulation_buildings": 107,
+    "routes": 3011,
+    "visual_buildings": 272,
+    "visual_trees": 115,
+    "rendered_agent_cap": 240,
+    "limitations": [
+      "Not a time-evolving crowd simulation. Each walker replays its simulator-chosen route in real time on the pavement, with no collision avoidance; behaviour colours are one equilibrium.",
+      "Vehicles are illustrative only: there is no traffic data for this area.",
+      "Citizen behaviour is calibrated on the 41-person Argus survey, not on Pune residents.",
+      "Facade windows, wall tints and the people and vehicle models are appearance, not data.",
+      "Not a surveyed skyline: 40 of 2069 building heights come from OSM tags, the rest are interpolated from neighbours or inferred from building class."
+    ]
+  },
+  "artifacts": {
+    "omniverse_stage": "cities/pune/main_view_400m.usda",
+    "snapshot_pattern": null
+  },
+  "advisor_source": {
+    "kind": "deterministic_rules",
+    "label": "Deterministic threshold advisor (Simulation/main.py)",
+    "detail": "Not an LLM. The simulator is the only authority for metrics and intervention effectiveness."
+  },
+  "warnings": [
+    "Recorded fixture: these numbers replay a real Pune simulator run. No simulator process ran for this request.",
+    "Environmental, comfort and intervention formulas are heuristic prototypes, not medical, meteorological, hydraulic or engineering models.",
+    "Population is a population equivalent, not a headcount. Citizens are animated on the 1 km model; the 400 m view shows only those inside the square.",
+    "Citizen behavioural parameters are calibrated from 41 survey participants. Home and destination placement is a heuristic, not survey data.",
+    "Not a time-evolving crowd simulation. Each walker replays its simulator-chosen route in real time on the pavement, with no collision avoidance; behaviour colours are one equilibrium.",
+    "Vehicles are illustrative only: there is no traffic data for this area.",
+    "Citizen behaviour is calibrated on the 41-person Argus survey, not on Pune residents.",
+    "Facade windows, wall tints and the people and vehicle models are appearance, not data.",
+    "Not a surveyed skyline: 40 of 2069 building heights come from OSM tags, the rest are interpolated from neighbours or inferred from building class."
+  ]
+}

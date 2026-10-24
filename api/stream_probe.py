@@ -101,7 +101,7 @@ def available_stream_config(checked_utc, probe: dict, *, source="live") -> dict:
         # Which city Kit was launched on (tools/demo_launch.ps1 -City sets this); the probe cannot ask Kit.
         "city": stream_city(),
         "stage": city_profile(stream_city())["stage"],
-        "desktop_fallback": ".\\repo.bat launch -n urbantwin.kit",
+        "desktop_fallback": ".\\tools\\demo_launch.ps1 -Inspector",
         "references": [
             "https://docs.omniverse.nvidia.com/ov-web-sdk/latest/index.html",
             "https://docs.omniverse.nvidia.com/kit/docs/kit-app-template/108.0/docs/streaming.html",

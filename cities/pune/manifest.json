@@ -10,7 +10,7 @@
     18.5195
   ],
   "projection": "local tangent-plane equirectangular (x = R*radians(lon-lon0)*cos(radians(lat0)), y = R*radians(lat-lat0))",
-  "projection_reason": "All layers use the scripted local-metres projection, matching the London scene's conventions. UTM 43N was not used for any layer because UTM grid north is ~0.36 deg off true north at this location, which would misalign UTM-projected layers against scripted ones by ~3 m at tile edges. The UTM 43N easting/northing of the origin is recorded below for reference only; no geometry was built from it.",
+  "projection_reason": "All layers use the scripted local-metres projection, matching the metre-scale scene's conventions. UTM 43N was not used for any layer because UTM grid north is ~0.36 deg off true north at this location, which would misalign UTM-projected layers against scripted ones by ~3 m at tile edges. The UTM 43N easting/northing of the origin is recorded below for reference only; no geometry was built from it.",
   "import_path": "scripted (section 4 fallback projection) for buildings, roads, green spaces, trees. BlenderGIS not installed or used.",
   "blender_version": "4.5.15",
   "counts": {

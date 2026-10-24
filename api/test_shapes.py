@@ -26,20 +26,20 @@ class ShapeTests(unittest.TestCase):
         report = json.loads(
             (ROOT / "Simulation" / "urbantwin_demo_output.json").read_text(encoding="utf-8")
         )
-        london = live_run_summary(report, "2026-09-19T12:00:00+00:00", "r-london")
+        default = live_run_summary(report, "2026-09-19T12:00:00+00:00", "r-default")
         pune = live_run_summary(report, "2026-09-19T12:00:00+00:00", "r-pune", city="pune")
-        self.assertEqual(london["city"]["name"], "Russell Square, London")
-        self.assertEqual(london["artifacts"]["omniverse_stage"], "phase9/scene/main.usda")
+        self.assertEqual(default["city"]["key"], "pune")
+        self.assertEqual(default["artifacts"]["omniverse_stage"], "cities/pune/main_view_400m.usda")
         self.assertEqual(pune["city"]["key"], "pune")
         self.assertEqual(pune["artifacts"]["omniverse_stage"], "cities/pune/main_view_400m.usda")
         self.assertIsNone(pune["artifacts"]["snapshot_pattern"])
         self.assertTrue(any("Vehicles are illustrative" in s for s in pune["city"]["limitations"]))
         self.assertFalse(any("223 of 623" in s for s in pune["city"]["limitations"]))
-        # warnings are city-specific too: no London counts or file names on a Pune run
+        # All run defaults and warnings describe the sole supported city.
         self.assertFalse(any("223 of 623" in w or "city_osm.json" in w or "60 fixed snapshots" in w
                              for w in pune["warnings"]))
         self.assertTrue(any("cities/pune/city_pune.json" in w for w in pune["warnings"]))
-        self.assertEqual(london["warnings"], LIVE_RUN_WARNINGS)
+        self.assertEqual(default["warnings"], LIVE_RUN_WARNINGS)
 
     def test_live_warnings_gated_by_status_and_report(self):
         report = json.loads(

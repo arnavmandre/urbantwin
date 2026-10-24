@@ -2,7 +2,7 @@
 
 > **Simulate the human experience before building the city.**
 
-Argus AI (internally *UrbanTwin AI*) is a human-centric urban digital twin. A planner picks a city, sets a
+Argus AI (internally *UrbanTwin AI*) is a human-centric urban digital twin. A planner explores central Pune, sets a
 scenario (heat, humidity, rain, crowding), and watches survey-calibrated synthetic citizens move through
 real OpenStreetMap streets in a live NVIDIA Omniverse stream. The system then shows how their comfort, stress
 and route choices change, and what happens when a proposed intervention is applied.
@@ -60,7 +60,7 @@ Real city (OpenStreetMap)  ->  Scenario  ->  Synthetic citizens  ->  Simulation
 | Simulator | Per-citizen route choice over real walking paths, responding to heat, rain, crowding, shade and transit; emergent corridor congestion (damped iterative assignment); human-experience metrics | Pure Python, deterministic, ~80 built-in asserts |
 | Advisor | Threshold rules find problem zones, buildings and routes and propose executable interventions; an LLM ranks them and chats with the planner, grounded in the run's numbers | Python; Agent 37 hosted Hermes agent (Groq `gpt-oss-120b` fallback) |
 | Visualisation | Citizens as animated low-poly people coloured by behaviour; illustrative traffic; Before/After switch | NVIDIA Omniverse Kit, RTX, OpenUSD |
-| Dashboard | Scenario controls, city switch, live viewport, metrics, citizen inspector, advisor panels | Next.js, WebRTC (`@nvidia/ov-web-rtc`) |
+| Dashboard | Scenario controls, live viewport, metrics, citizen inspector, advisor panels | Next.js, WebRTC (`@nvidia/ov-web-rtc`) |
 | Backend | Runs the full pipeline per scenario on a local HTTP API | Python standard-library server |
 | Analytics | History of every run (baseline vs intervention) | PostgreSQL + Grafana (Docker) |
 
@@ -70,19 +70,11 @@ Real city (OpenStreetMap)  ->  Scenario  ->  Synthetic citizens  ->  Simulation
 - safety 20 %
 - mobility 20 %
 
-## 4. Two real cities
+## 4. Central Pune — the sole demo
 
-| | **London — Russell Square** | **Pune — around Shaniwar Wada** |
-|---|---|---|
-| Area | Russell Square district | 1 km × 1 km simulated; 400 m × 400 m streamed |
-| Buildings in model | 623 (12 OSM-derived materials) | 2,069 (272 in the streamed view) |
-| Trees at surveyed OSM positions | 511 | 329 (115 in the streamed view) |
-| Simulator city | 75 buildings, 254 real walking routes | 107 buildings, 3,011 real walking routes |
-| Citizens | survey-calibrated | 600 survey-calibrated, every one animated |
-| Run time | seconds | about 7 s per full run (simulate + animate both arms + publish) |
+Pune is the sole active demo: 1 km × 1 km simulation, 400 m × 400 m view, 2,069 buildings (272 in view), 329 OSM trees (115 in view), and 600 agents by default. The current calibration uses 41 survey participants, not surveyed Pune residents. The new 63-response experiment failed joint holdout checks and the coverage gate; it has not replaced the demo population. Frozen Phase 1–8 assets and the Phase 9 stage are archival, not the active city.
 
-Pune shows the approach transfers: a dense, historic South Asian street grid built from raw OSM data, with
-one-way streets respected, traffic on the left and auto-rickshaws in the illustrative traffic.
+The simulator network has 107 buildings and 3,011 real walking routes. The view clips the larger simulation; not all agents are visible at once. Vehicles are illustrative.
 
 ## 5. Demo script (about 4 minutes)
 
@@ -100,15 +92,14 @@ one-way streets respected, traffic on the left and auto-rickshaws in the illustr
    (continuing comfortably). These are the same citizens, re-simulated.
 6. **Jump the camera to the Problem Zone** the run flagged, then open a citizen in the inspector to see their
    route, exposure and behaviour.
-7. **Switch city to London** to show the same pipeline on a second city. Optionally open the Grafana history
-   of every run.
+7. **Open Grafana history** to review Pune runs and their baseline/intervention arms.
 
 ## 6. Why it's different
 
 - **People, not just pixels.** Most digital twins show buildings; we show how *people* fare in them.
 - **Grounded behaviour.** Citizens are calibrated from real survey responses (41 participants, 164
   observations, holdout check passed 5/5), not hand-tuned.
-- **Real cities, end to end.** From a raw OpenStreetMap extract to a live RTX stream with one command
+- **Real Pune geography, end to end.** From a raw OpenStreetMap extract to a live RTX stream with one command
   (`tools\demo_launch.ps1 -City pune`).
 - **Honest by design.** Every run carries its own caveats, mock data is never presented as live, and the UI
   states the city-specific limits (below).
@@ -125,10 +116,9 @@ one-way streets respected, traffic on the left and auto-rickshaws in the illustr
   chosen route. Walkers have no collision avoidance and vehicles have no signal model, so crossing traffic can
   meet at junctions.
 - **Vehicles are illustrative.** There is no traffic data.
-- **Heights are partly inferred.** OSM tags give 223 of 623 heights in London and 40 of 2,069 in Pune; the
+- **Heights are partly inferred.** OSM tags give 40 of 2,069 heights in Pune; the
   rest are interpolated or inferred from building class.
-- **London's Before/After** switches between a stress state and a proposal state (a comparison, not a measured
-  improvement). **Pune's** compares the simulator's own before and after arms.
+- **Before/After** compares Pune's simulated baseline and intervention arms, not measured real-world improvement.
 - **Appearance is not data:** Pune's facade windows, wall tints and the people and vehicle models are visual
   only.
 - **Random Forest models** are trained and documented (`phase10/models/`) but are not yet wired into the

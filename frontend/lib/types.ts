@@ -44,8 +44,8 @@ export interface ScenarioCatalog {
   recorded_scenario?: ScenarioInput & { run_id: string };
 }
 
-/** EXTENSION: which city a run targets (integration/cities.py). Omitted = London. */
-export type CityKey = "london" | "pune";
+/** EXTENSION: which city a run targets (integration/cities.py). Omitted = Pune. */
+export type CityKey = "pune";
 
 export interface RunRequest extends ScenarioInput {
   city?: CityKey;
@@ -217,7 +217,7 @@ export interface ControlReference {
 
 /** EXTENSION: what the simulated and rendered city actually contains. */
 export interface CityFacts {
-  /** EXTENSION: absent on older fixtures, which are all London. */
+  /** EXTENSION: Pune is the only supported city. */
   key?: CityKey;
   name: string;
   source: string;
@@ -297,7 +297,7 @@ export interface StreamConfig {
   ice_servers: RTCIceServerLike[];
   session_token: string | null;
   stage: string;
-  /** EXTENSION: the city Kit was launched on (demo_launch.ps1 -City). Absent = London. */
+  /** EXTENSION: the city Kit was launched on (demo_launch.ps1 -City). Absent = Pune. */
   city?: CityKey;
   reason?: string;
   desktop_fallback?: string;

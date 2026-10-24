@@ -1,5 +1,7 @@
 # Phase 14 — Browser WebRTC (operator notes)
 
+For the active Pune demo, launch from the Pune worktree with `tools/demo_launch.ps1 -City pune`; see `PUNE_CITY.md`.
+
 Branch **`phase13-streaming-kit`** in Argus wires the Next.js dashboard to local
 NVIDIA Kit App Streaming using **`@nvidia/ov-web-rtc@6.7.0`**. You do **not**
 need to merge this branch to `main` to try it locally; run everything from this
@@ -97,7 +99,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/stream/config
 - `signaling_url`: e.g. `http://127.0.0.1:49100`
 - `signaling_host`, `signaling_port`, `media_host`, `media_port` populated
 - `session_token`: non-null short-lived token
-- `stage`: `phase9/scene/main.usda`
+- `stage`: `cities/pune/main_view_400m.usda`
 
 **Kit not running** — expect:
 
@@ -122,7 +124,7 @@ npm run dev
 
 Open the dashboard in **Chrome or Edge**. With stream config `available`, the
 viewport uses `kit-webrtc-adapter` and attempts DIRECT WebRTC to the host/ports
-from the API. When connected, you should see the Phase 9 Russell Square stage
+from the API. When connected, you should see the Pune stage
 from the RTX host.
 
 ## Mock mode stays offline

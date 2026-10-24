@@ -1,7 +1,7 @@
 {
   "status": "offline",
   "source": "recorded_fixture",
-  "checked_utc": "2026-09-20T02:56:14+00:00",
+  "checked_utc": "2026-10-24T22:12:39+00:00",
   "signaling_url": null,
   "signaling_host": null,
   "signaling_port": null,
@@ -9,9 +9,10 @@
   "media_port": null,
   "ice_servers": [],
   "session_token": null,
-  "stage": "phase9/scene/main.usda",
+  "city": "pune",
+  "stage": "cities/pune/main_view_400m.usda",
   "reason": "No urbantwin.streaming.kit application is configured. NVIDIA Kit App Streaming has not been set up for this project yet.",
-  "desktop_fallback": ".\\repo.bat launch -n urbantwin.kit",
+  "desktop_fallback": ".\\tools\\demo_launch.ps1 -Inspector",
   "references": [
     "https://docs.omniverse.nvidia.com/ov-web-sdk/latest/index.html",
     "https://docs.omniverse.nvidia.com/kit/docs/kit-app-template/108.0/docs/streaming.html"

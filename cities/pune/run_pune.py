@@ -6,7 +6,7 @@ explain/advisor endpoints and analytics/import_runs.py read Pune runs unchanged,
 run_pipeline's staging, promotion and rollback helpers rather than copying them.
 
 Deliberate exception to the canonical-snapshot rule (CLAUDE.md rule 4): Pune skips canonical v1 snapshots.
-That contract is bound to the frozen London Phase 1 city_id and edge registry; Pune animates straight from
+That contract is bound to the archived Phase 1 city_id and edge registry; Pune animates straight from
 the simulator report over its own OSM route polylines (pune_sim.animate). See docs/PUNE_CITY.md.
 
 Publishing copies agents_before.usdc, agents_after.usdc and view_run.usdc into cities/pune/, which
@@ -82,7 +82,7 @@ def run_pune(run_id, *, temperature, humidity, rainfall, population, interventio
         report, sim_command = timed("simulation", lambda: pune_sim.simulate(
             staging / "simulation_report.json", temperature=temperature, humidity=humidity,
             rainfall=rainfall, population=population, interventions=interventions))
-        # same shape as London's stage record; analytics/import_runs.py reads the city file from this command
+        # standard simulation stage record; analytics/import_runs.py reads the city file from this command
         stages[-1]["command"] = sim_command
         walkers = timed("agents", lambda: pune_sim.animate(report, staging / "usd"))
         view = timed("view_mask", lambda: pune_view.write_run_layer(staging / "usd", report,

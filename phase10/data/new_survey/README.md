@@ -22,11 +22,10 @@ The input-file checksum changes because the original private file included names
 and emails. Age codes in `participant_parameters.csv` are 0=18–24, 1=25–34,
 2=35–59, 3=60 or above; all other mappings are in the validation report.
 
-The output JSON contains behaviour only. The project already has
-`phase10/assign_homes.py` to assign home/destination for a chosen city. A separate
-schema check placed all 1,000 on the London OSM city and ran the simulator
-successfully, including its built-in tests. Those large simulation logs are not
-included in this package.
+The output JSON contains behaviour only; home/destination assignment is a separate
+heuristic. The active Pune demo retains 600 agents by default from the 41-person
+calibration. This 63-response experiment failed joint holdout checks and the
+coverage gate and is not its replacement population.
 
 ## Files
 

@@ -1,8 +1,8 @@
-# Pune — second city
+# Pune — the active demo
 
-Central Pune (1 km × 1 km around Shaniwar Wada, 18.5195 N 73.8553 E) runs on the same
-unmodified simulator as London and can be selected from the dashboard and streamed through Kit.
-Everything lives in `cities/pune/`; London's Phase 1–11 path is untouched.
+Pune is the sole active demo: 1 km × 1 km simulation, 400 m × 400 m view, 2,069 buildings (272 in view), 329 OSM trees (115 in view), and 600 agents by default. The current calibration uses 41 survey participants, not surveyed Pune residents. The new 63-response experiment failed joint holdout checks and the coverage gate; it has not replaced the demo population. Frozen Phase 1–8 assets and the Phase 9 stage are archival, not the active city.
+
+Central Pune is centred around Shaniwar Wada (18.5195 N, 73.8553 E).
 
 ## Pipeline
 
@@ -21,7 +21,7 @@ pune_center.osm (Overpass, unmodified, stored as binary)
 Generated files are gitignored (`cities/pune/.gitignore`) and rebuild deterministically in ~15 s:
 
 ```powershell
-cd cities\pune; python pune_sim.py; python pune_view.py
+Push-Location cities\pune; python pune_sim.py; python pune_view.py; Pop-Location
 ```
 
 `build_script.py` needs Blender (`"<blender.exe>" -b -P build_script.py`); its outputs are committed
@@ -31,10 +31,10 @@ so normal use does not need Blender.
 
 | Piece | Pune behaviour |
 |---|---|
-| API `POST /api/runs` | optional `"city": "london" \| "pune"` (default London). `api/run_manager.py` runs the city's pipeline from `integration/cities.py`. |
-| Run folder | `data/runs/<id>/simulation_report.json` + `manifest.json` (`"city": "pune"`), same shape as London. The `simulation` stage records the simulator command, so `analytics/import_runs.py` stores `city_id = city_pune.json` (London: `city_osm.json`). Failed or cancelled runs still import without a city. |
-| Run summary | city facts, limitations and warnings come from the city registry; a Pune run never shows London counts. Rendered-walker figures refer to the 400 m view (about 40 % of citizens at a time). |
-| Dashboard | City switch in the Scenario drawer. Pune is disabled in mock mode (fixtures are London only). While streaming, the header names the streamed city, and a note on the viewport appears when the last run is for the other city. |
+| API `POST /api/runs` | `"city": "pune"` is the default and may be sent explicitly. `api/run_manager.py` runs the city's pipeline from `integration/cities.py`. |
+| Run folder | `data/runs/<id>/simulation_report.json` + `manifest.json` (`"city": "pune"`). The `simulation` stage records the simulator command, so `analytics/import_runs.py` stores `city_id = city_pune.json`. Failed or cancelled runs still import without a city. |
+| Run summary | city facts, limitations and warnings come from the city registry; use the Pune profile. Rendered-walker figures refer to the 400 m view (about 40 % of citizens at a time). |
+| Dashboard | Use live Pune runs and the Pune stream; recorded mock fixtures do not demonstrate a live Pune simulation. The dashboard presents Pune only. |
 | Kit stream | `tools\demo_launch.ps1 -City pune` (add `-Force` to replace a running stream). Sets `URBANTWIN_STAGE` for the Kit launch scripts and `URBANTWIN_STREAM_CITY` for the API. |
 | Before/After | `demoState` variant on `/World`: `Stressed` = before arm, `Intervention` = the simulator's after arm (same citizens re-simulated under the applied intervention). The existing Kit `view_commands` handler drives it unchanged. |
 | Cameras | `/World/Cameras/{Overview, Aerial, Street, ProblemZone}`; ProblemZone is re-aimed per run at the run's first problem zone. |
@@ -42,10 +42,9 @@ so normal use does not need Blender.
 
 ## Deliberate exception: no canonical v1 snapshots
 
-CLAUDE.md rule 4 says visualisation reads canonical v1 snapshots. That contract is bound to the frozen
-London Phase 1 `city_id` and the Phase 2 edge registry, neither of which exists for Pune. Pune animates
-directly from the simulator report over its own OSM route polylines (`pune_sim.animate`). London still
-follows rule 4 exactly.
+The canonical v1 snapshot contract belongs to the archival frozen Phase 1 `city_id`
+and Phase 2 edge registry. Pune animates directly from the simulator report over
+its own OSM route polylines (`pune_sim.animate`). Do not regenerate frozen assets.
 
 ## What is real and what is not
 

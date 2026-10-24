@@ -96,14 +96,14 @@ export async function validateScenario(
     };
   }
 
-  // Recorded fixtures are London only; replaying one as a Pune run would misrepresent it.
-  if (raw.city !== undefined && raw.city !== "london") {
+  // A recorded run is always a Pune run.
+  if (raw.city !== undefined && raw.city !== "pune") {
     return {
       ok: false,
       error: {
         error: {
           code: "validation_failed",
-          message: "Pune runs need the live API (set URBANTWIN_API_BASE). Recorded fixtures are London only.",
+          message: "Only Pune is supported.",
         },
       },
     };

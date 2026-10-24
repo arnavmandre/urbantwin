@@ -4,7 +4,7 @@
 #   .\tools\demo_launch.ps1 -Force          # free ports 8000/3000/49100 first
 #   .\tools\demo_launch.ps1 -NoAnalytics    # skip Grafana + run importer
 #   .\tools\demo_launch.ps1 -Inspector      # also open a desktop Kit editor on the stage
-#   .\tools\demo_launch.ps1 -City pune      # stream the Pune 400 m view instead of London
+#   .\tools\demo_launch.ps1 -City pune      # stream the Pune 400 m view
 #   .\Start-Argus.bat                       # double-click from Explorer
 param(
     [switch]$Force,
@@ -12,8 +12,8 @@ param(
     [switch]$NoAnalytics,
     [switch]$Inspector,
     # Kit opens one stage per launch; switching city means relaunching (with -Force).
-    [ValidateSet("london", "pune")]
-    [string]$City = "london"
+    [ValidateSet("pune")]
+    [string]$City = "pune"
 )
 
 $ErrorActionPreference = "Stop"
@@ -191,7 +191,7 @@ if (-not $PythonExe) { $PythonExe = "python" }
 $Py = "& '{0}'" -f $PythonExe
 
 # Kit stage per city (integration/cities.py holds the same paths for the API).
-$StageRel = @{ london = "phase9\scene\main.usda"; pune = "cities\pune\main_view_400m.usda" }[$City]
+$StageRel = "cities\pune\main_view_400m.usda"
 $StagePath = Join-Path $ArgusRoot $StageRel
 
 Write-Host "Argus AI - demo launch"
@@ -265,7 +265,7 @@ if ($kitStarted) {
         'Write-Host "This is headless (--no-window). No Omniverse editor UI will appear."'
         'Write-Host "Wait until this window shows Kit ready / livestream, then check the dashboard Live chip."'
         'Write-Host ""'
-        # Read by launch_urbantwin_streaming.bat; unset there means the London stage.
+        # Read by launch_urbantwin_streaming.bat; the stage is always the Pune view.
         ("`$env:URBANTWIN_STAGE = '{0}'" -f ($StagePath -replace '\\', '/'))
         # explicit .\ path: cmd ignores the current folder when NoDefaultCurrentDirectoryInExePath is set
         ("cmd.exe /c `".\launch_urbantwin_streaming.bat`" 2>&1 | Tee-Object -FilePath '{0}'" -f $KitLog)

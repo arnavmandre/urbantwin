@@ -243,7 +243,7 @@ The 39 old mapped/guessed records are available only as totals. They are exclude
 - n=63 is small; correlation intervals are wide, especially for rare older age bands.
 - Self-reported stated preferences, not observed behaviour. Parameter mappings are modelling choices, not measured scales.
 - Questions Q5/Q6 isolate stated temperature and Q5/Q8 isolate stated crowding on shaded paths, but there is no unshaded contrast or factorial experiment. Detour choices confound time and preference. Do not claim separately measured causal effects.
-- Most respondents are 18–24. These citizens represent the supplied sample, not Pune's or London's population demographics.
+- Most respondents are 18–24. These citizens represent the supplied sample, not Pune's population demographics.
 - A thousand draws adds no independent survey evidence. Holdout checks test distributional resemblance, not simulator forecasting accuracy.
 - Mid-ranks for coarse ordinal ties approximate a latent Gaussian model. Interpolated quantiles can generate intermediate speeds/scores absent from the form.
 - At least one item can be missing: available-item averages differ in reliability. Item counts accompany every mapped respondent.

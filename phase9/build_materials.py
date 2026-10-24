@@ -45,7 +45,7 @@ MATERIALS = {
     # walls
     "brick_red":     ((0.478, 0.286, 0.216), 0.88, 0.0),
     "brick_brown":   ((0.392, 0.271, 0.208), 0.88, 0.0),
-    "brick_london":  ((0.549, 0.467, 0.376), 0.86, 0.0),   # yellow London stock
+    "brick_yellow":  ((0.549, 0.467, 0.376), 0.86, 0.0),   # yellow stock brick
     "stone":         ((0.706, 0.678, 0.612), 0.80, 0.0),
     "portland":      ((0.788, 0.769, 0.714), 0.76, 0.0),
     "concrete":      ((0.588, 0.588, 0.573), 0.85, 0.0),
@@ -86,16 +86,16 @@ COLOUR_WORDS = {
     "red": "brick_red", "white": "render_white", "lightgrey": "stone",
     "light_grey": "stone", "grey": "concrete", "gray": "concrete",
     "black": "roof_slate", "green": "timber", "orange": "brick_red",
-    "beige": "render_cream", "cream": "render_cream", "yellow": "brick_london",
+    "beige": "render_cream", "cream": "render_cream", "yellow": "brick_yellow",
 }
 MATERIAL_WORDS = {
-    "brick": "brick_london", "stone": "stone", "concrete": "concrete",
+    "brick": "brick_yellow", "stone": "stone", "concrete": "concrete",
     "glass": "glass", "plaster": "render_white", "wood": "timber",
     "timber_framing": "timber", "metal": "concrete",
 }
 TYPE_WALL = {
-    "house": "brick_london", "terrace": "brick_london", "apartments": "brick_brown",
-    "dormitory": "brick_brown", "residential": "brick_london",
+    "house": "brick_yellow", "terrace": "brick_yellow", "apartments": "brick_brown",
+    "dormitory": "brick_brown", "residential": "brick_yellow",
     "university": "portland", "college": "portland", "school": "brick_red",
     "hospital": "portland", "hotel": "render_cream", "office": "glass",
     "commercial": "concrete", "retail": "retail", "supermarket": "retail",
@@ -162,7 +162,7 @@ def wall_material(tags: dict) -> str:
     if levels >= 7:
         return "concrete"
     if levels >= 4:
-        return "brick_london"
+        return "brick_yellow"
     return "brick_brown"
 
 

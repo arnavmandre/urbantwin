@@ -125,7 +125,7 @@ def build(source, output):
         x,y = nodes[node.attrib['id']]
         if not inside((x,y)): continue
         polygon('/World/Transit/osm_node_'+node.attrib['id'],[(x-1,y-1),(x+1,y-1),(x+1,y+1),(x-1,y+1)],3,(.18,.55,.86),tags)
-    city.GetRootLayer().customLayerData = {'source':'OpenStreetMap','attribution':'© OpenStreetMap contributors https://www.openstreetmap.org/copyright','studyArea':'TEMPORARY SAMPLE: Russell Square, London','geometry':'OSM footprints; approximate heights and widths; flat terrain'}
+    city.GetRootLayer().customLayerData = {'source':'OpenStreetMap','attribution':'© OpenStreetMap contributors https://www.openstreetmap.org/copyright','studyArea':'ARCHIVAL SAMPLE: frozen Phase 1 OSM tile','geometry':'OSM footprints; approximate heights and widths; flat terrain'}
     city.GetRootLayer().Save()
     env = stage('environment.usda')
     UsdGeom.Scope.Define(env,'/World/Environment')

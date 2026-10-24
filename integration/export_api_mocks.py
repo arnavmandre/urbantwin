@@ -40,11 +40,11 @@ except ModuleNotFoundError:  # run as a script: integration/ itself is sys.path[
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-DEFAULT_REPORT = ROOT / "Simulation" / "urbantwin_demo_output.json"
+DEFAULT_REPORT = ROOT / "cities" / "pune" / "sim_report_pune.json"
 DEFAULT_MODEL_CARD = ROOT / "phase10" / "models" / "model_card.json"
 DEFAULT_OUT = ROOT / "frontend" / "mocks"
 
-RUN_ID = "run_20260919_001"
+RUN_ID = "run_pune_recorded"
 CITIZEN_SAMPLE = 200     # the report holds 1000; the fixture must stay small
 AGENT_CAP = 500          # phase3 schema limit on rendered agents
 
@@ -57,53 +57,28 @@ BEHAVIORS = (
     "AVOID_AREA",
 )
 
-# Shared integrity disclaimers (after the source-specific lead-in). The UI
-# renders these; it must not write its own version of them.
-_SHARED_RUN_WARNINGS = [
-    "Environmental, comfort and intervention formulas are heuristic prototypes, "
-    "not medical, meteorological, hydraulic or engineering models.",
-    "Population is a population equivalent, not a headcount. At most 500 "
-    "representative agents are rendered; 1,000 citizens are simulated.",
-    "Citizen behavioural parameters are calibrated from 41 survey participants, "
-    "but the survey scenarios confound temperature, crowding and shade. Home and "
-    "destination placement is a heuristic, not survey data.",
-    "Building heights: 223 of 623 meshes come from OSM data; the rest are "
-    "inferred from building class or interpolated from neighbours.",
-    "The animation interpolates positions between 60 fixed snapshots. It is not "
-    "a time-evolving behavioural or collision simulation.",
-]
-
-RUN_WARNINGS = [
-    "Recorded fixture: these numbers come from a real run of Simulation/main.py "
-    "on city_osm.json, replayed by the mock API. No simulator process ran for "
-    "this request.",
-    *_SHARED_RUN_WARNINGS,
-]
-
-LIVE_RUN_WARNINGS = [
-    "Live run: these numbers came from a just-executed simulator run of "
-    "Simulation/main.py on city_osm.json for this request.",
-    *_SHARED_RUN_WARNINGS,
-]
-
-
 def live_run_warnings(city=None) -> list[str]:
-    """Integrity list for a completed live run. London keeps its exact wording; Pune states its own facts."""
+    """Integrity statements for a Pune run."""
     profile = city_profile(city)
-    if profile["key"] == "london":
-        return list(LIVE_RUN_WARNINGS)
-    heuristic, _population, calibration = _SHARED_RUN_WARNINGS[:3]
     return [
-        "Live run: these numbers came from a just-executed run of the same Simulation/main.py "
-        f"on {profile['city_file']} for this request.",
-        heuristic,
-        "Population is a population equivalent, not a headcount. Every simulated citizen is animated "
-        "as one walker on the 1 km model; the streamed 400 m view shows only those inside the square"
-        + (f" (about {round(profile['walkers_visible_mean'])} at a time)." if profile.get("walkers_visible_mean")
-           else "."),
-        calibration,
+        "Live run: these numbers came from a just-executed simulator run of "
+        f"Simulation/main.py on {profile['city_file']} for this request.",
+        "Environmental, comfort and intervention formulas are heuristic prototypes, "
+        "not medical, meteorological, hydraulic or engineering models.",
+        "Population is a population equivalent, not a headcount. Citizens are animated "
+        "on the 1 km model; the 400 m view shows only those inside the square.",
+        "Citizen behavioural parameters are calibrated from 41 survey participants. "
+        "Home and destination placement is a heuristic, not survey data.",
         *profile["limitations"],
     ]
+
+
+LIVE_RUN_WARNINGS = live_run_warnings()
+RUN_WARNINGS = [
+    "Recorded fixture: these numbers replay a real Pune simulator run. "
+    "No simulator process ran for this request.",
+    *LIVE_RUN_WARNINGS[1:],
+]
 
 MOCK_HEALTH_NOTES = [
     "No Python HTTP API is running. Responses are recorded fixtures "
@@ -188,9 +163,7 @@ def run_summary(
             "routes": len(before["routes"]),
             "visual_buildings": profile["visual_buildings"],
             "visual_trees": profile["visual_trees"],
-            # London renders through the phase3 schema cap; Pune's 400 m view shows those inside the square
-            "rendered_agent_cap": (AGENT_CAP if profile["key"] == "london"
-                                   else profile.get("walkers_visible_max") or len(before["citizens"])),
+            "rendered_agent_cap": profile.get("walkers_visible_max") or len(before["citizens"]),
             "limitations": profile["limitations"],
         },
         "artifacts": {
@@ -331,10 +304,11 @@ def stream_config_fixture(generated_at, *, source="recorded_fixture"):
         "media_port": None,
         "ice_servers": [],
         "session_token": None,
-        "stage": "phase9/scene/main.usda",
+        "city": "pune",
+        "stage": "cities/pune/main_view_400m.usda",
         "reason": "No urbantwin.streaming.kit application is configured. NVIDIA "
                   "Kit App Streaming has not been set up for this project yet.",
-        "desktop_fallback": ".\\repo.bat launch -n urbantwin.kit",
+        "desktop_fallback": ".\\tools\\demo_launch.ps1 -Inspector",
         "references": [
             "https://docs.omniverse.nvidia.com/ov-web-sdk/latest/index.html",
             "https://docs.omniverse.nvidia.com/kit/docs/kit-app-template/108.0/docs/streaming.html",

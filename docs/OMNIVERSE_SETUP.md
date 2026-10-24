@@ -69,9 +69,10 @@ This is a project-specific importer using real OpenUSD APIs, not an NVIDIA OSM e
 NVIDIA's supported application path is Kit App Template; the old Launcher was
 deprecated on October 1, 2025. Reuse the working app instead of reinstalling it.
 
-1. Download and cache a small OSM extract. **Done.** Temporary sample: Russell Square,
-   London, bbox west/south/east/north = `-0.130,51.519,-0.119,51.526`, approximately
-   762 × 779 m. This is not a selected final study area.
+This section records archival Phase 1 setup, not the active city. Do not rebuild
+the frozen Phase 1–8 assets. See `PUNE_CITY.md` for the sole Pune demo.
+
+1. Download and cache a small OSM extract. **Done for the archival prototype.**
 2. Build low-detail separate buildings, road/path ribbons, green areas, and transit
    markers, retaining OSM tags and identifiers. **Done.**
 3. Save `city_base.usda`, `environment.usda`, and composing `main.usda`. **Done.**
@@ -87,7 +88,7 @@ python phase1\build_city.py
 ```
 
 The script accepts `--source path\to\extract.osm --out path\to\scene`.
-It derives origin and dimensions from the XML bounds, so it is not tied to London.
+It derives origin and dimensions from the XML bounds, using the source extract.
 Use an approximately 500–1000 m study area. The local equirectangular projection
 is an approximation for small areas, not a survey-grade or terrain model.
 The camera presets may need adjustment for a different study area's size.

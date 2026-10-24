@@ -12,9 +12,9 @@ Survey DATA (1).xlsx           41 respondents x 4 scenarios = 164 observations
         |  generate_citizens.py        Gaussian copula
    synthetic_citizens.csv      1,000 citizens preserving the joint distribution
         |  assign_homes.py
-   Simulation/citizens_survey_city_osm.json
+   cities/pune/citizens_pune.json
         |
-   cd Simulation; python main.py citizens_survey_city_osm.json city_osm.json
+   python cities/pune/run_pune.py --run-id survey-smoke --no-publish
 ```
 
 ## Run it
@@ -48,15 +48,10 @@ independence on both correlation errors, and coverage is 84.9% against the prese
 1,000 draws use all 63 respondents after evaluation. The 39 old mapped/guessed
 records are excluded because only their totals were supplied.
 
-To place these citizens on London's city for a separate simulator test:
-
-```powershell
-python phase10/assign_homes.py --city city_osm.json `
-  --source phase10/data/new_survey/citizens_survey.json `
-  --out phase10/data/new_survey/citizens_ready.json
-python Simulation/main.py phase10/data/new_survey/citizens_ready.json `
-  Simulation/city_osm.json --output phase10/data/new_survey/simulation_smoke.json
-```
+The 63-response experiment failed joint holdout checks and the coverage gate.
+It has not replaced the active Pune demo: 600 agents by default from the original
+41-person calibration. See `docs/PUNE_CITY.md`. Original commands below document
+archival calibration tooling.
 
 Archetypes are heuristic display labels, not measured occupations or disabilities.
 The six composite scores cannot reconstruct the sixteen original question answers.

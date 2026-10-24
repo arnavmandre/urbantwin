@@ -3,6 +3,8 @@
 Hackathon project. Human-centric urban digital twin: Python simulation +
 OpenUSD/Omniverse visualisation + survey-calibrated synthetic citizens.
 
+Pune is the sole active demo: 1 km × 1 km simulation, 400 m × 400 m view, 2,069 buildings (272 in view), 329 OSM trees (115 in view), and 600 agents by default. The current calibration uses 41 survey participants, not surveyed Pune residents. The new 63-response experiment failed joint holdout checks and the coverage gate; it has not replaced the demo population. Frozen Phase 1–8 assets and the Phase 9 stage are archival, not the active city.
+
 ## Before creating ANY new script, check whether it already exists
 
 This repo has been built across several sessions. Long sessions get summarised,
@@ -29,9 +31,9 @@ context loss.
 | `integration/` | boundary | Snapshot loader, route-mapping proposal tooling, and `export_api_mocks.py` (simulator report -> frontend fixtures). |
 | `api/` | local HTTP | Phase 12 stdlib server: `python -m api`. Single-worker Phase 11 runs; see `docs/PHASE12_LOCAL_API.md`. |
 | `frontend/` | web | Next.js dashboard. Default = recorded fixtures (`mode: "mock"`). Set `URBANTWIN_API_BASE` to proxy Phase 12. See `frontend/README.md`. |
-| `phase9/` | realism + demo | Materials, heights, trees, lighting, cameras, overlays — all `over` layers — plus `build_city_from_osm.py`. **Open `phase9/scene/main.usda` for the demo.** |
+| `phase9/` | realism + demo | Materials, heights, trees, lighting, cameras, overlays — all `over` layers — plus `build_city_from_osm.py`. **Archival stage; use `cities/pune/main_view_400m.usda` for the demo.** |
 | `phase10/` | survey | Real survey -> calibrated synthetic citizens. `data/` holds the four-table dataset. |
-| `cities/pune/` | second city | Central Pune 1 km: OSM -> Blender build (spec-validated `city_base.usda`), simulator bridge, 400 m Kit view, per-run `run_pune.py`. Generated layers are gitignored. City registry: `integration/cities.py`. See `docs/PUNE_CITY.md`. |
+| `cities/pune/` | active city | Central Pune 1 km: OSM -> Blender build (spec-validated `city_base.usda`), simulator bridge, 400 m Kit view, per-run `run_pune.py`. Generated layers are gitignored. City registry: `integration/cities.py`. See `docs/PUNE_CITY.md`. |
 | `analytics/` | run history | Phase 18: Postgres + Grafana (Docker) and `import_runs.py`, which copies `data/runs/` + `data/run_events.jsonl` into the DB. See `docs/PHASE18_GRAFANA_ANALYTICS.md`. |
 | `docs/` | contracts | `INTEGRATION_CONTRACT.md` is authoritative. |
 
@@ -69,7 +71,7 @@ it, commands are dropped. Read `docs/CLAUDE_HANDOFF_STREAMING.md` "Resolution".
    `Simulation/urbantwin_demo_output.json`. The exporter owns normalisation
    (0–100 → 0–1) and route→edge mapping. **Documented exception: Pune**
    (`cities/pune/`) animates straight from the report, because the snapshot
-   contract is bound to London's frozen `city_id` and edge registry.
+   contract is bound to the archival frozen `city_id` and edge registry.
 5. **Metrics are heuristic prototypes**, not medical/meteorological models. Keep
    the disclaimers in output and docs.
 
@@ -80,21 +82,18 @@ Only claim what the code does when executed. Verified as of this writing:
 - ✅ Deterministic; data-driven city and citizens; per-citizen route choice
   responds to heat/rain/crowd/transit/green; emergent corridor congestion
   (MSA-damped iterative assignment); citizen profiles move the HEI.
-- ✅ Phase 9: 623 buildings carry 12 distinct OSM-derived materials and heights
-  spanning 2–39 m; 511 trees at surveyed OSM positions; `city_osm.json` runs the
-  simulator on real Russell Square geometry with `osm_edges` on every route.
+- ✅ Pune: 2,069 buildings, 329 OSM trees; the 400 m view keeps 272 buildings
+  and 115 trees. The simulator uses 107 destination/origin buildings and 3,011 routes.
 - ✅ Phase 10: citizen behavioural parameters ARE calibrated from 41 real
   survey participants (copula-sampled, holdout-validated 5/5). But the scenario
   design is confounded (temp+crowd+shade move together) - say "calibrated",
   never "separately measured per factor". home/destination is a heuristic,
   not survey data.
-- ⚠️ Building heights: only **223 of 623** come from real OSM data
-  (`urbantwin:heightSource` records each one). The rest are inferred from
-  building class or interpolated from neighbours. Do not call the skyline
-  surveyed.
+- ⚠️ Pune heights: 40 of 2,069 come from OSM height/level tags; the rest are
+  interpolated from neighbours or inferred. Do not call the skyline surveyed.
 - ⚠️ The default 8-building `city.json` is still abstract, and
   `integration/route_mapping.proposal.json` is still provisional. Use
-  `city_osm.json` when real geography matters.
+  `cities/pune/city_pune.json` for active Pune geography.
 - ✅ Agents animate from a 60-frame snapshot sequence; each walks at their own
   survey-calibrated speed. Positions between frames are interpolated for display
   and edge colours are one fixed equilibrium - do NOT call it a time-evolving
@@ -126,7 +125,7 @@ Only claim what the code does when executed. Verified as of this writing:
 - ✅ Phase 15, verified in Kit's own log (not just the UI): real browser clicks
   arrive over the data channel, and with the Kit-repo handler a command applies
   (`viewport camera -> /World/Cameras/Street`, `demoState -> Intervention`).
-  Before/After switches the Phase 8 `demoState` variant: a stress-versus-proposal
+  Archival Phase 8 Before/After switches the `demoState` variant: a stress-versus-proposal
   comparison, **not** a measured improvement.
 - ⚠️ Streaming needs Kit (with the Kit-repo changes) + live API + a Chromium
   browser. Without them the viewport stays offline; never claim it in mock mode.
@@ -140,7 +139,7 @@ Only claim what the code does when executed. Verified as of this writing:
 - ✅ Pune (`cities/pune/`, `docs/PUNE_CITY.md`): `POST /api/runs` with
   `"city": "pune"` runs the unmodified simulator on 107 OSM buildings / 3,011 real
   routes, animates both arms (~7 s per run) and publishes into the 400 m view;
-  dashboard city switch; `demo_launch.ps1 -City pune` streams it. Before/After =
+  live Pune dashboard; `demo_launch.ps1 -City pune` streams it. Before/After =
   the simulator's own before/after arms via the same `demoState` variant names.
   ⚠️ Only 40 of 2,069 Pune heights are OSM-tagged; vehicles are illustrative;
   citizens are survey-calibrated, not Pune residents; facades are appearance.
@@ -153,28 +152,15 @@ Only claim what the code does when executed. Verified as of this writing:
 ## Commands
 
 ```powershell
-cd Simulation; python main.py                        # tests + 8-building demo
-cd Simulation; python main.py citizens_osm.json city_osm.json   # real OSM city
-python phase9\set_scenario.py baseline|heat|rain|dusk
-python phase8\switch_state.py stressed|intervention
-python phase9\validate_phase9.py
-python phase3\validate_mock_data.py <snapshot.json>
+# Prepare the active city once (the scene export itself is already committed)
+Push-Location cities/pune
+python pune_sim.py
+python pune_view.py
+Pop-Location
 
-# complete local regeneration (Phase 11 is the source of truth)
-python integration\run_pipeline.py `
-  --run-id phase11-smoke `
-  --citizens Simulation\citizens_survey_city_osm.json `
-  --city Simulation\city_osm.json `
-  --temperature 40 `
-  --humidity 80 `
-  --rainfall 80 `
-  --population 100000 `
-  --frames 60 `
-  --duration 60
-
-# animated agents (60 frames of real walking, then press play in Kit)
-python integration\export_snapshot.py --state before --frames 60 --duration 60
-python phase9\agents_instancer.py data\simulation_before_*.json --behavior-report Simulation\urbantwin_demo_output.json
+# Run the Pune pipeline without publishing to the stream
+python integration/run_pipeline.py --run-id pune-smoke --temperature 40 --humidity 80 --rainfall 80 --population 100000 --no-publish
+python -m unittest discover -s cities/pune -p test_run_pune.py
 
 # web dashboard — mock fixtures (default)
 python integration\export_api_mocks.py      # refresh fixtures after a new run
@@ -187,11 +173,11 @@ $env:URBANTWIN_API_BASE = "http://127.0.0.1:8000"
 cd frontend; npm run dev
 # operator notes: docs/PHASE12_LOCAL_API.md
 
-# Pune (second city) - prepare once, then runs come from the dashboard or:
-cd cities\pune; python pune_sim.py; python pune_view.py
+# Pune (active demo) - prepare once, then runs come from the dashboard or:
+Push-Location cities\pune; python pune_sim.py; python pune_view.py; Pop-Location
 python cities\pune\run_pune.py --run-id pune1 --temperature 38 --humidity 60 --rainfall 0 --population 50000
 python -m unittest cities/pune/test_run_pune.py
-.\tools\demo_launch.ps1 -City pune -Force      # stream Pune instead of London
+.\tools\demo_launch.ps1 -City pune -Force      # stream the active Pune stage
 
 # Phase 18 Grafana run analytics (demo_launch.ps1 does this when Docker runs)
 docker compose -f analytics\docker-compose.yml up -d
@@ -205,9 +191,9 @@ python -m unittest analytics.test_import_runs
 # full steps: docs/PHASE14_BROWSER_WEBRTC.md
 
 # Phase 17 judge demo (branch phase13-streaming-kit; phases 11–17 on this branch)
-cd C:\Users\arnav\Argus\.worktrees\phase13-streaming-kit
-.\tools\demo_launch.ps1          # API + Kit + frontend; logs in tools/demo_logs/
-.\tools\demo_launch.ps1 -Inspector   # + a desktop Kit editor on the same stage (Kit repo:
+cd C:\Users\arnav\Argus\.worktrees\pune-city
+.\tools\demo_launch.ps1 -City pune # API + Kit + frontend; logs in tools/demo_logs/
+.\tools\demo_launch.ps1 -City pune -Inspector   # + a desktop Kit editor on the same stage (Kit repo:
                                      #   launch_urbantwin_inspector.bat); both Kits auto-reload
                                      #   layers a run rewrites (no "fetch changes" toast)
 python tools\demo_smoke.py       # health, stream config, short run, view allow-list
@@ -215,7 +201,7 @@ python tools\demo_smoke.py       # health, stream config, short run, view allow-
 # LLM explain is optional (URBANTWIN_LLM_URL); relaunch Kit if view_commands miss Kit
 ```
 
-Open `phase9/scene/main.usda` in Kit for the demo stage.
+Open `cities/pune/main_view_400m.usda` in Kit for the demo stage.
 Kit app lives outside the repo: `C:\Users\arnav\omniverse\kit-app-template`,
 launch desktop with `.\repo.bat launch -n urbantwin.kit`.
 Streaming layer (branch `phase13-streaming-kit` in the kit-app-template):

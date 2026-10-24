@@ -61,11 +61,9 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
   );
   const [applyInterventions, setApplyInterventions] = useState(true);
   const streamCity: CityKey | null =
-    streamConfig.status === "available" ? streamConfig.city ?? "london" : null;
+    streamConfig.status === "available" ? streamConfig.city ?? "pune" : null;
   // Start on the city the last run or the stream is about, so results and viewport agree.
-  const [city, setCity] = useState<CityKey>(
-    bootstrap.run?.city?.key ?? streamCity ?? "london",
-  );
+  const city: CityKey = "pune";
   const impactRef = useRef<HTMLDivElement>(null);
   const revealImpactAfterRun = useRef(false);
   const [scrollToImpact, setScrollToImpact] = useState(false);
@@ -215,8 +213,6 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
           <ScenarioControls
             plain
             city={city}
-            onCityChange={setCity}
-            puneAvailable={health.mode === "live"}
             streamCity={streamCity}
             catalog={scenarios}
             scenario={scenario}
@@ -412,7 +408,6 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
  * completed live run is passed: it is the only kind the importer has stored.
  */
 const CITY_SCENE: Record<CityKey, string> = {
-  london: "Russell Square, London",
   pune: "Shaniwar Wada, central Pune",
 };
 

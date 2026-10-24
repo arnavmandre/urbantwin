@@ -71,7 +71,7 @@ manifest = {
     "origin_lon0_lat0": [LON0, LAT0],
     "projection": "local tangent-plane equirectangular (x = R*radians(lon-lon0)*cos(radians(lat0)), y = R*radians(lat-lat0))",
     "projection_reason": (
-        "All layers use the scripted local-metres projection, matching the London scene's conventions. "
+        "All layers use the scripted local-metres projection, matching the metre-scale scene's conventions. "
         "UTM 43N was not used for any layer because UTM grid north is ~0.36 deg off true north at this "
         "location, which would misalign UTM-projected layers against scripted ones by ~3 m at tile edges. "
         "The UTM 43N easting/northing of the origin is recorded below for reference only; no geometry was "

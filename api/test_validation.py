@@ -19,12 +19,12 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(request["population"], 100000)
         self.assertEqual(request["animation_frames"], 3)
 
-    def test_city_defaults_to_london_accepts_pune_rejects_unknown(self):
+    def test_city_defaults_to_pune_and_rejects_other_cities(self):
         base = {"temperature": 30, "humidity": 50, "rainfall": 0, "population": 50000,
                 "apply_recommended_interventions": False}
-        self.assertEqual(validate_run_request(base)[0]["city"], "london")
+        self.assertEqual(validate_run_request(base)[0]["city"], "pune")
         self.assertEqual(validate_run_request({**base, "city": "pune"})[0]["city"], "pune")
-        for bad in ("paris", [], {"key": "pune"}, 3):
+        for bad in ("unsupported-city", [], {"key": "pune"}, 3):
             request, error = validate_run_request({**base, "city": bad})
             self.assertIsNone(request)
             self.assertIn("city", error["error"]["fields"])
