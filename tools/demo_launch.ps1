@@ -4,12 +4,16 @@
 #   .\tools\demo_launch.ps1 -Force          # free ports 8000/3000/49100 first
 #   .\tools\demo_launch.ps1 -NoAnalytics    # skip Grafana + run importer
 #   .\tools\demo_launch.ps1 -Inspector      # also open a desktop Kit editor on the stage
+#   .\tools\demo_launch.ps1 -City pune      # stream the Pune 400 m view instead of London
 #   .\Start-Argus.bat                       # double-click from Explorer
 param(
     [switch]$Force,
     [switch]$NoBrowser,
     [switch]$NoAnalytics,
-    [switch]$Inspector
+    [switch]$Inspector,
+    # Kit opens one stage per launch; switching city means relaunching (with -Force).
+    [ValidateSet("london", "pune")]
+    [string]$City = "london"
 )
 
 $ErrorActionPreference = "Stop"
@@ -179,10 +183,29 @@ $ImporterLog = Join-Path $LogDir ("importer-{0}.log" -f $Stamp)
 $ImporterScript = Join-Path $LogDir ("start-importer-{0}.ps1" -f $Stamp)
 $AnalyticsUrl = $null
 
+# Kit stage per city (integration/cities.py holds the same paths for the API).
+$StageRel = @{ london = "phase9\scene\main.usda"; pune = "cities\pune\main_view_400m.usda" }[$City]
+$StagePath = Join-Path $ArgusRoot $StageRel
+
 Write-Host "Argus AI - demo launch"
 Write-Host ("  Argus root: {0}" -f $ArgusRoot)
+Write-Host ("  City:       {0}  (stage {1})" -f $City, $StageRel)
 Write-Host ("  Logs:       {0}" -f $LogDir)
 Write-Host ""
+
+# Pune's animated layers are generated, not committed (cities/pune/.gitignore); build them once.
+if ($City -eq "pune" -and -not (Test-Path -LiteralPath $StagePath)) {
+    Write-Host "Preparing Pune (first launch, ~15 s): pune_sim.py then pune_view.py ..."
+    Push-Location (Join-Path $ArgusRoot "cities\pune")
+    try {
+        & python pune_sim.py
+        if ($LASTEXITCODE -eq 0) { & python pune_view.py }
+        if ($LASTEXITCODE -ne 0) { throw "Pune preparation failed (exit $LASTEXITCODE) - see output above." }
+    } finally {
+        Pop-Location
+    }
+    Write-Host ""
+}
 Write-Host "NOTE: Omniverse Kit streaming starts with --no-window."
 Write-Host "      You will NOT see a normal Omniverse editor. Look for a console"
 Write-Host "      titled 'Argus AI Kit Streaming' and a Live viewport in Chrome/Edge."
@@ -216,6 +239,8 @@ if ($Force) {
 $apiLines = @(
     ("Set-Location -LiteralPath '{0}'" -f $ArgusRoot)
     '$Host.UI.RawUI.WindowTitle = ''Argus AI API (:8000)'''
+    # Tells /api/stream/config which city Kit shows; the TCP probe cannot ask Kit.
+    ("`$env:URBANTWIN_STREAM_CITY = '{0}'" -f $City)
     ("python -m api --host 127.0.0.1 --port 8000 2>&1 | Tee-Object -FilePath '{0}'" -f $ApiLog)
 )
 $apiLines | Set-Content -LiteralPath $ApiScript -Encoding ASCII
@@ -233,6 +258,8 @@ if ($kitStarted) {
         'Write-Host "This is headless (--no-window). No Omniverse editor UI will appear."'
         'Write-Host "Wait until this window shows Kit ready / livestream, then check the dashboard Live chip."'
         'Write-Host ""'
+        # Read by launch_urbantwin_streaming.bat; unset there means the London stage.
+        ("`$env:URBANTWIN_STAGE = '{0}'" -f ($StagePath -replace '\\', '/'))
         ("cmd.exe /c `"launch_urbantwin_streaming.bat`" 2>&1 | Tee-Object -FilePath '{0}'" -f $KitLog)
         'Write-Host ""'
         'Write-Host "Kit process exited. If the stream never came online, scroll up or open:"'
@@ -254,6 +281,7 @@ if ($Inspector) {
     if ($inspectorRunning) {
         Write-Host "Inspector Kit already running - leaving it open."
     } elseif (Test-Path -LiteralPath $InspectorBat) {
+        $env:URBANTWIN_STAGE = $StagePath -replace '\\', '/'  # inherited by the inspector's cmd.exe
         Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$InspectorBat`"" -WorkingDirectory $KitRoot | Out-Null
         Write-Host "Started: Inspector Kit (desktop editor window; shares the GPU with the stream)"
     } else {
