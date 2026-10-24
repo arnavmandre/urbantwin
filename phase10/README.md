@@ -19,6 +19,52 @@ Survey DATA (1).xlsx           41 respondents x 4 scenarios = 164 observations
 
 ## Run it
 
+### October 2026 Q1–Q16 walking form
+
+The existing generator also accepts the new respondent-level form. It writes to
+`phase10/data/new_survey/`, leaving the 41-person demo population in place:
+
+```powershell
+python phase10/generate_citizens.py "path/to/Form responses 1.csv" `
+  --option-counts "path/to/Option counts.csv" --count 1000 --seed 7
+python -m unittest phase10.test_generate_citizens
+```
+
+Dependencies for this mode are NumPy and SciPy (the CSV parser is standard library).
+`cleaned_responses.csv` excludes names, emails and timestamps and can be supplied
+back as the response input to reproduce the results. The source checksum will
+then reflect that anonymised input. Each real respondent has a sequential ID.
+
+The run creates `synthetic_citizens.csv`, `citizens_survey.json`, mapped parameters
+with item counts, `validation_report.md` and machine-readable holdout metrics/splits.
+Read the validation report before replacing a demo population. Its gates are
+diagnostic checks, not evidence of predictive or causal validity.
+
+On the supplied export: 63 new respondents; the counts sheet matches the first
+57 exactly. Twenty 50/13 splits fit mid-rank normal-score copulas and independent
+marginals on training respondents only. The copula does **not** outperform
+independence on both correlation errors, and coverage is 84.9% against the preset
+85% lower bound. All six mean marginal gates pass for the copula. The final
+1,000 draws use all 63 respondents after evaluation. The 39 old mapped/guessed
+records are excluded because only their totals were supplied.
+
+To place these citizens on London's city for a separate simulator test:
+
+```powershell
+python phase10/assign_homes.py --city city_osm.json `
+  --source phase10/data/new_survey/citizens_survey.json `
+  --out phase10/data/new_survey/citizens_ready.json
+python Simulation/main.py phase10/data/new_survey/citizens_ready.json `
+  Simulation/city_osm.json --output phase10/data/new_survey/simulation_smoke.json
+```
+
+Archetypes are heuristic display labels, not measured occupations or disabilities.
+The six composite scores cannot reconstruct the sixteen original question answers.
+The report marks those synthetic question shares as unidentifiable rather than
+inventing them. Old-per-respondent sensitivity analysis needs the old raw rows.
+
+### Original 41-person survey
+
 ```powershell
 python phase10\ingest_survey.py
 python phase10\fit_behaviour.py

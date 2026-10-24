@@ -18,3 +18,9 @@ integration/runtime/
 
 # Launcher runtime output (tools/demo_launch.ps1 regenerates these every run)
 tools/demo_logs/
+
+# Separate schema-check run for the October walking survey
+phase10/data/new_survey/citizens_ready.json
+phase10/data/new_survey/simulation_smoke.*
+phase10/data/new_survey/reproduced/
+phase10/data/new_survey/*.zip

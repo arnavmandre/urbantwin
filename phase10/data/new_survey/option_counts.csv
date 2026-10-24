@@ -1,0 +1,78 @@
+UrbanTwin AI answer option counts,,,,
+57 new responses + 39 old records = 96 combined records,,,,
+Old records include mapped answers and guesses. No answer counts are shown separately.,,,,
+,,,,
+Question,Answer option,New form selections,Old mapped or guessed,Combined count
+1. How old are you?,18–24,42,23,65
+1. How old are you?,35–59,11,9,20
+1. How old are you?,60 or above,2,3,5
+1. How old are you?,25–34,2,4,6
+2. About how long does it take you to walk 1 km at your normal pace?,10–15 minutes,23,20,43
+2. About how long does it take you to walk 1 km at your normal pace?,Under 10 minutes,29,16,45
+2. About how long does it take you to walk 1 km at your normal pace?,Over 20 minutes,2,0,2
+2. About how long does it take you to walk 1 km at your normal pace?,16–20 minutes,3,3,6
+"3. How often do you use public transport (bus, metro, train)?",Weekly,10,16,26
+"3. How often do you use public transport (bus, metro, train)?",Rarely or never,24,20,44
+"3. How often do you use public transport (bus, metro, train)?",Almost daily,10,3,13
+"3. How often do you use public transport (bus, metro, train)?",Monthly,12,0,12
+"3. How often do you use public transport (bus, metro, train)?",No answer,1,0,1
+4. How much does hot weather bother you while walking?,A lot,14,6,20
+4. How much does hot weather bother you while walking?,Quite a bit,26,25,51
+4. How much does hot weather bother you while walking?,Not at all,2,0,2
+4. How much does hot weather bother you while walking?,A little,15,8,23
+"5. How comfortable would you feel walking on a quiet, shaded path at 28°C?",Slightly uncomfortable,8,2,10
+"5. How comfortable would you feel walking on a quiet, shaded path at 28°C?",Comfortable,31,10,41
+"5. How comfortable would you feel walking on a quiet, shaded path at 28°C?",Very comfortable,15,25,40
+"5. How comfortable would you feel walking on a quiet, shaded path at 28°C?",Very uncomfortable,3,2,5
+"6. How comfortable would you feel walking on a quiet, shaded path at 35°C?",Very uncomfortable,15,5,20
+"6. How comfortable would you feel walking on a quiet, shaded path at 35°C?",Slightly uncomfortable,26,12,38
+"6. How comfortable would you feel walking on a quiet, shaded path at 35°C?",Very comfortable,4,5,9
+"6. How comfortable would you feel walking on a quiet, shaded path at 35°C?",Comfortable,12,17,29
+"7. On a hot day, how much extra time would you walk to use a shaded route?",More than 10 minutes,5,1,6
+"7. On a hot day, how much extra time would you walk to use a shaded route?",6–10 minutes,11,18,29
+"7. On a hot day, how much extra time would you walk to use a shaded route?",Up to 5 minutes,29,15,44
+"7. On a hot day, how much extra time would you walk to use a shaded route?",No extra time,12,5,17
+"8. How comfortable would you feel walking on a crowded, shaded path at 28°C?",Comfortable,21,10,31
+"8. How comfortable would you feel walking on a crowded, shaded path at 28°C?",Slightly uncomfortable,25,26,51
+"8. How comfortable would you feel walking on a crowded, shaded path at 28°C?",Very comfortable,2,0,2
+"8. How comfortable would you feel walking on a crowded, shaded path at 28°C?",Very uncomfortable,8,3,11
+"8. How comfortable would you feel walking on a crowded, shaded path at 28°C?",No answer,1,0,1
+9. How much extra time would you walk to avoid a crowded path?,No extra time,10,1,11
+9. How much extra time would you walk to avoid a crowded path?,6–10 minutes,13,10,23
+9. How much extra time would you walk to avoid a crowded path?,Up to 5 minutes,29,25,54
+9. How much extra time would you walk to avoid a crowded path?,More than 10 minutes,5,3,8
+"10. Would you walk for 15 minutes in light rain with an umbrella or raincoat, if there was no flooding?",Probably would,22,18,40
+"10. Would you walk for 15 minutes in light rain with an umbrella or raincoat, if there was no flooding?",Probably would not,8,12,20
+"10. Would you walk for 15 minutes in light rain with an umbrella or raincoat, if there was no flooding?",Definitely would not,4,0,4
+"10. Would you walk for 15 minutes in light rain with an umbrella or raincoat, if there was no flooding?",Definitely would,22,9,31
+"10. Would you walk for 15 minutes in light rain with an umbrella or raincoat, if there was no flooding?",No answer,1,0,1
+"11. Would you walk for 15 minutes in heavy rain with an umbrella or raincoat, if there was no flooding?",Definitely would not,14,16,30
+"11. Would you walk for 15 minutes in heavy rain with an umbrella or raincoat, if there was no flooding?",Probably would not,20,18,38
+"11. Would you walk for 15 minutes in heavy rain with an umbrella or raincoat, if there was no flooding?",Definitely would,6,0,6
+"11. Would you walk for 15 minutes in heavy rain with an umbrella or raincoat, if there was no flooding?",Probably would,16,5,21
+"11. Would you walk for 15 minutes in heavy rain with an umbrella or raincoat, if there was no flooding?",No answer,1,0,1
+"12. During rain, how much extra time would you walk to use a covered path?",Up to 5 minutes,18,8,26
+"12. During rain, how much extra time would you walk to use a covered path?",More than 10 minutes,10,7,17
+"12. During rain, how much extra time would you walk to use a covered path?",6–10 minutes,21,24,45
+"12. During rain, how much extra time would you walk to use a covered path?",No extra time,7,0,7
+"12. During rain, how much extra time would you walk to use a covered path?",No answer,1,0,1
+13. Flooding blocks your path. A dry route adds 10 minutes. What would you do?,Take the dry route,40,36,76
+13. Flooding blocks your path. A dry route adds 10 minutes. What would you do?,Delay or cancel the trip,4,1,5
+13. Flooding blocks your path. A dry route adds 10 minutes. What would you do?,"Use available public transport (bus, metro, train)",5,2,7
+13. Flooding blocks your path. A dry route adds 10 minutes. What would you do?,Wait somewhere safe,6,0,6
+13. Flooding blocks your path. A dry route adds 10 minutes. What would you do?,No answer,2,0,2
+14. Which walking route would you choose? The routes are otherwise alike.,A 15-minute route with trees and gardens,26,37,63
+14. Which walking route would you choose? The routes are otherwise alike.,A 10-minute route with little greenery,12,1,13
+14. Which walking route would you choose? The routes are otherwise alike.,I would avoid walking,4,0,4
+14. Which walking route would you choose? The routes are otherwise alike.,Either route is fine,14,1,15
+14. Which walking route would you choose? The routes are otherwise alike.,No answer,1,0,1
+15. How much extra time would you walk to use a route with trees and gardens?,Up to 5 minutes,22,10,32
+15. How much extra time would you walk to use a route with trees and gardens?,No extra time,16,2,18
+15. How much extra time would you walk to use a route with trees and gardens?,More than 10 minutes,8,9,17
+15. How much extra time would you walk to use a route with trees and gardens?,6–10 minutes,10,18,28
+15. How much extra time would you walk to use a route with trees and gardens?,No answer,1,0,1
+"16. If walking and public transport (bus, metro, train) both took 15 minutes, would you choose public transport?",Probably would,13,16,29
+"16. If walking and public transport (bus, metro, train) both took 15 minutes, would you choose public transport?",Definitely would,12,3,15
+"16. If walking and public transport (bus, metro, train) both took 15 minutes, would you choose public transport?",Definitely would not,14,5,19
+"16. If walking and public transport (bus, metro, train) both took 15 minutes, would you choose public transport?",Probably would not,17,15,32
+"16. If walking and public transport (bus, metro, train) both took 15 minutes, would you choose public transport?",No answer,1,0,1
