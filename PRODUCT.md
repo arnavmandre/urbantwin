@@ -49,8 +49,9 @@ carries its own caveats.
 ## Capabilities and Constraints
 
 - **City scope: multi-city, with Pune as the lead city.** Pune (around Shaniwar Wada) is the primary demo
-  city; the product supports more than one city, and London (Russell Square) may return. Do not design the
-  interface as if only one city can ever exist.
+  city. The code currently ships Pune only (London was retired from the app), but the product scope is
+  multi-city and London (Russell Square) may return. Do not design the interface as if only one city can
+  ever exist.
 - Scenario inputs: temperature, humidity, rainfall, population equivalent (a demand scale, not a headcount).
 - The simulator can test exactly four interventions: increase shade, improve drainage, alternative
   pedestrian routes, no major intervention. Nothing else may be offered as testable.
@@ -71,8 +72,11 @@ carries its own caveats.
 
 ## Evidence on Hand
 
-- Real survey: 41 participants, 164 observations (`phase10/data/`); a newer survey export with option
-  counts exists (`UrbanTwin AI — Answer Option Counts`), per-respondent data not yet integrated.
+- Real survey: 41 participants, 164 observations (`phase10/data/`); this calibration drives the demo's
+  citizens.
+- October 2026 walking survey: 63 respondents, 1,000 synthetic citizens (`phase10/data/new_survey/`). It
+  passed the six marginal checks but failed the comparison against independent marginals and the coverage
+  gate, so it is exploratory and has NOT replaced the demo population. Do not present it as validated.
 - Real geography: OpenStreetMap extracts for Pune (`cities/pune/pune_center.osm`) and London.
 - Verified facts and figures: `docs/PITCH_OVERVIEW.md`, `docs/PUNE_CITY.md`, `CLAUDE.md`.
 - Absent, and must not be fabricated: testimonials, customer or city-partner names, deployment claims,
