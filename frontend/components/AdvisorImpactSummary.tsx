@@ -1,8 +1,9 @@
 "use client";
 
 import { Card, CardHeader } from "@/components/ui/Card";
+import { DeltaPill } from "@/components/ui/DeltaPill";
 import { Pill } from "@/components/ui/Pill";
-import { formatDelta, formatMetric } from "@/lib/metric-format";
+import { METRIC_META, formatDelta, formatMetric } from "@/lib/metric-format";
 import type { InterventionParameters, MetricKey, SimulationMetrics } from "@/lib/types";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -51,7 +52,7 @@ export function AdvisorImpactSummary({
         }
       />
 
-      <div className="mt-5 rounded-[14px] border border-accent-line bg-surface-1 p-4">
+      <div className="mt-5 rounded-[14px] border border-accent-line bg-surface p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">
           Human Experience Index
         </p>
@@ -73,12 +74,14 @@ export function AdvisorImpactSummary({
         {SUPPORTING_METRICS.map((metric) => {
           const delta = after[metric] - before[metric];
           return (
-            <div key={metric} className="rounded-[12px] border border-hairline bg-surface-1 px-3 py-2.5">
-              <p className="text-[11px] text-ink-3">{metric.replaceAll("_", " ")}</p>
+            <div key={metric} className="rounded-[12px] border border-hairline bg-surface px-3 py-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-[11px] text-ink-3">{METRIC_META[metric].label}</p>
+                <DeltaPill compact metricKey={metric} delta={delta} />
+              </div>
               <p className="mt-1 tabular text-[13px] font-semibold text-ink">
                 {formatMetric(metric, before[metric])} → {formatMetric(metric, after[metric])}
               </p>
-              <p className="mt-0.5 tabular text-[11px] text-accent">{formatDelta(metric, delta)}</p>
             </div>
           );
         })}

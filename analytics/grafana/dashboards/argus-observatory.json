@@ -152,7 +152,7 @@
           "unit": "none",
           "color": {
             "mode": "fixed",
-            "fixedColor": "#2563eb"
+            "fixedColor": "#00897b"
           },
           "noValue": "No runs imported"
         },
@@ -320,7 +320,7 @@
           "unit": "s",
           "color": {
             "mode": "fixed",
-            "fixedColor": "#2563eb"
+            "fixedColor": "#00897b"
           },
           "noValue": "No runs imported",
           "decimals": 1
@@ -467,7 +467,7 @@
                 "id": "color",
                 "value": {
                   "mode": "fixed",
-                  "fixedColor": "#9aa4b2"
+                  "fixedColor": "#6b5fd3"
                 }
               }
             ]
@@ -482,7 +482,7 @@
                 "id": "color",
                 "value": {
                   "mode": "fixed",
-                  "fixedColor": "#2563eb"
+                  "fixedColor": "#00897b"
                 }
               }
             ]
@@ -796,7 +796,7 @@
                 "id": "color",
                 "value": {
                   "mode": "fixed",
-                  "fixedColor": "#9aa4b2"
+                  "fixedColor": "#6b5fd3"
                 }
               }
             ]
@@ -811,7 +811,7 @@
                 "id": "color",
                 "value": {
                   "mode": "fixed",
-                  "fixedColor": "#2563eb"
+                  "fixedColor": "#00897b"
                 }
               }
             ]
@@ -867,7 +867,7 @@
           "decimals": 2,
           "color": {
             "mode": "fixed",
-            "fixedColor": "#2563eb"
+            "fixedColor": "#00897b"
           }
         },
         "overrides": []

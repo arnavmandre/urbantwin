@@ -93,7 +93,8 @@ function StackedBar({
           {formatCount(sum)} citizens simulated
         </p>
       </div>
-      <div className="mt-1.5 flex h-3 w-full overflow-hidden rounded-full bg-surface-3">
+      {/* 2px surface gaps separate segments instead of strokes around them. */}
+      <div className="mt-1.5 flex h-3 w-full gap-[2px] overflow-hidden rounded-full">
         {BEHAVIORS.map((behavior) => {
           const count = counts[behavior] ?? 0;
           if (count === 0) return null;

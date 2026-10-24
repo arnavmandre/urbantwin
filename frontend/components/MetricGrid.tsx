@@ -1,13 +1,11 @@
 "use client";
 
-import { Pill } from "@/components/ui/Pill";
+import { DeltaPill } from "@/components/ui/DeltaPill";
 import { cx } from "@/lib/cx";
 import {
   HEADLINE_METRICS,
   METRIC_META,
-  deltaPolarity,
   directionLabel,
-  formatDelta,
   formatMetric,
   metricFraction,
 } from "@/lib/metric-format";
@@ -67,29 +65,23 @@ function MetricTile({
       : state === "after"
         ? value - compareValue
         : compareValue - value;
-  const polarity = delta === null ? null : deltaPolarity(metricKey, delta);
+  const otherState = state === "after" ? "before" : "after";
 
   return (
     <div className="rounded-[14px] border border-hairline bg-surface-2 p-4">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[12px] font-medium text-ink-2">{meta.label}</p>
-        {delta !== null && polarity ? (
-          <Pill
-            tone={
-              polarity === "improvement"
-                ? "positive"
-                : polarity === "regression"
-                  ? "negative"
-                  : "neutral"
-            }
+        {delta !== null ? (
+          <DeltaPill
+            compact
+            metricKey={metricKey}
+            delta={delta}
             title={
               state === "after"
                 ? "Change from before to after the intervention"
                 : "Change the intervention would make"
             }
-          >
-            {formatDelta(metricKey, delta)}
-          </Pill>
+          />
         ) : null}
       </div>
 
@@ -98,17 +90,34 @@ function MetricTile({
         <span className="ml-1 text-[13px] font-medium text-ink-3">{meta.unit}</span>
       </p>
 
-      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-surface-3">
+      {/* Meter in the colour of the arm on screen. A tick marks the other arm,
+          so the tile shows where the value came from (or would go). */}
+      <div className="relative mt-3 h-1.5 w-full rounded-full bg-surface-3">
         <div
           className={cx(
             "h-full rounded-full transition-[width] duration-500 [transition-timing-function:var(--ease)]",
-            meta.direction === "higher_is_better" ? "bg-accent" : "bg-caution",
+            state === "after" ? "bg-series-after" : "bg-series-before",
           )}
           style={{ width: `${metricFraction(metricKey, value) * 100}%` }}
         />
+        {compareValue !== undefined ? (
+          <span
+            title={`${otherState === "before" ? "Before" : "After"}: ${formatMetric(metricKey, compareValue)}`}
+            className="absolute -top-1 h-3.5 w-[3px] -translate-x-1/2 rounded-full bg-ink-2 ring-2 ring-surface-2"
+            style={{ left: `${metricFraction(metricKey, compareValue) * 100}%` }}
+          />
+        ) : null}
       </div>
 
-      <p className="mt-2 text-[11px] text-ink-3">{directionLabel(metricKey)}</p>
+      <p className="mt-2 text-[11px] text-ink-3">
+        {directionLabel(metricKey)}
+        {compareValue !== undefined ? (
+          <span className="tabular">
+            {" · "}
+            {otherState === "before" ? "was" : "after"} {formatMetric(metricKey, compareValue)}
+          </span>
+        ) : null}
+      </p>
     </div>
   );
 }
