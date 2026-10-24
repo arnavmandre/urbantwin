@@ -183,6 +183,13 @@ $ImporterLog = Join-Path $LogDir ("importer-{0}.log" -f $Stamp)
 $ImporterScript = Join-Path $LogDir ("start-importer-{0}.ps1" -f $Stamp)
 $AnalyticsUrl = $null
 
+# The WindowsApps "python" is a Microsoft Store alias stub that only prints "Python was not found".
+# Shells started by some apps put it ahead of the real install on PATH, so skip it explicitly.
+$PythonExe = (Get-Command python -All -ErrorAction SilentlyContinue |
+    Where-Object { $_.Source -notlike "*\WindowsApps\*" } | Select-Object -First 1).Source
+if (-not $PythonExe) { $PythonExe = "python" }
+$Py = "& '{0}'" -f $PythonExe
+
 # Kit stage per city (integration/cities.py holds the same paths for the API).
 $StageRel = @{ london = "phase9\scene\main.usda"; pune = "cities\pune\main_view_400m.usda" }[$City]
 $StagePath = Join-Path $ArgusRoot $StageRel
@@ -198,8 +205,8 @@ if ($City -eq "pune" -and -not (Test-Path -LiteralPath $StagePath)) {
     Write-Host "Preparing Pune (first launch, ~15 s): pune_sim.py then pune_view.py ..."
     Push-Location (Join-Path $ArgusRoot "cities\pune")
     try {
-        & python pune_sim.py
-        if ($LASTEXITCODE -eq 0) { & python pune_view.py }
+        & $PythonExe pune_sim.py
+        if ($LASTEXITCODE -eq 0) { & $PythonExe pune_view.py }
         if ($LASTEXITCODE -ne 0) { throw "Pune preparation failed (exit $LASTEXITCODE) - see output above." }
     } finally {
         Pop-Location
@@ -241,7 +248,7 @@ $apiLines = @(
     '$Host.UI.RawUI.WindowTitle = ''Argus AI API (:8000)'''
     # Tells /api/stream/config which city Kit shows; the TCP probe cannot ask Kit.
     ("`$env:URBANTWIN_STREAM_CITY = '{0}'" -f $City)
-    ("python -m api --host 127.0.0.1 --port 8000 2>&1 | Tee-Object -FilePath '{0}'" -f $ApiLog)
+    ("{0} -m api --host 127.0.0.1 --port 8000 2>&1 | Tee-Object -FilePath '{1}'" -f $Py, $ApiLog)
 )
 $apiLines | Set-Content -LiteralPath $ApiScript -Encoding ASCII
 
@@ -260,7 +267,8 @@ if ($kitStarted) {
         'Write-Host ""'
         # Read by launch_urbantwin_streaming.bat; unset there means the London stage.
         ("`$env:URBANTWIN_STAGE = '{0}'" -f ($StagePath -replace '\\', '/'))
-        ("cmd.exe /c `"launch_urbantwin_streaming.bat`" 2>&1 | Tee-Object -FilePath '{0}'" -f $KitLog)
+        # explicit .\ path: cmd ignores the current folder when NoDefaultCurrentDirectoryInExePath is set
+        ("cmd.exe /c `".\launch_urbantwin_streaming.bat`" 2>&1 | Tee-Object -FilePath '{0}'" -f $KitLog)
         'Write-Host ""'
         'Write-Host "Kit process exited. If the stream never came online, scroll up or open:"'
         ("Write-Host '  {0}'" -f $KitLog)
@@ -316,7 +324,7 @@ if (-not $NoAnalytics) {
             $importerLines = @(
                 ("Set-Location -LiteralPath '{0}'" -f $ArgusRoot)
                 '$Host.UI.RawUI.WindowTitle = ''Argus AI run importer (Grafana)'''
-                ("python analytics\import_runs.py --watch 2>&1 | Tee-Object -FilePath '{0}'" -f $ImporterLog)
+                ("{0} analytics\import_runs.py --watch 2>&1 | Tee-Object -FilePath '{1}'" -f $Py, $ImporterLog)
             )
             $importerLines | Set-Content -LiteralPath $ImporterScript -Encoding ASCII
             Start-DemoWindow -Title "Run importer (Grafana)" -ScriptPath $ImporterScript
