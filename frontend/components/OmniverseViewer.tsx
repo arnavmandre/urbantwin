@@ -194,6 +194,23 @@ export function OmniverseViewer({
 
   const connected = viewer.status === "connected" && viewer.stream !== null;
 
+  const commandProblem = !commandResult
+    ? null
+    : !commandResult.accepted
+      ? (commandResult.reason ?? "The server rejected the command.")
+      : !commandResult.delivered
+        ? (commandResult.reason ?? "It could not be sent to Kit.")
+        : !connected
+          ? "The stream is not live, so Kit did not receive it."
+          : null;
+
+  // Problems clear themselves; the next command replaces them anyway.
+  useEffect(() => {
+    if (!commandProblem) return;
+    const timer = window.setTimeout(() => setCommandResult(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [commandProblem]);
+
   useEffect(() => {
     if (!connected || !runId || commandedRunIdRef.current === runId) return;
     commandedRunIdRef.current = runId;
@@ -318,11 +335,12 @@ export function OmniverseViewer({
           </div>
           {topRight}
           {/* Kit switches the Phase 8 demoState variant, which is the same for
-              every run; only the metrics come from this run. */}
-          {connected ? (
+              every run; only the metrics come from this run. Said whenever the
+              3D "After" is on screen, which is when it could be misread. */}
+          {connected && state === "after" ? (
             <p className="basis-full text-right">
-              <span className="inline-block rounded-[8px] bg-surface/90 px-2 py-0.5 text-[11px] text-ink-3">
-                3D Before/After is a packaged comparison scene; metrics are from this run.
+              <span className="inline-block rounded-[8px] bg-surface/90 px-2 py-0.5 text-[11px] text-ink-3 shadow-[var(--shadow-card)] backdrop-blur">
+                3D &ldquo;After&rdquo; is a packaged comparison scene; metrics are from this run.
               </span>
             </p>
           ) : null}
@@ -370,26 +388,16 @@ export function OmniverseViewer({
           </span>
         </div>
 
-        {commandResult ? (
+        {/* Only problems are reported. A command that was sent stays silent:
+            `delivered` only means the browser's send resolved, so there is no
+            confirmation worth showing, and the viewport itself shows the change. */}
+        {commandProblem ? (
           <p
             role="status"
-            className="pointer-events-auto max-w-[min(560px,100%)] rounded-[10px] border border-hairline bg-surface/95 px-3 py-1.5 text-[11px] leading-relaxed text-ink-3 shadow-[var(--shadow-card)]"
+            className="pointer-events-auto max-w-[min(480px,100%)] rounded-[10px] border border-[color:var(--negative)]/25 bg-surface/95 px-3 py-1.5 text-[11.5px] leading-relaxed text-ink-2 shadow-[var(--shadow-card)] backdrop-blur"
           >
-            View command{" "}
-            <span className="font-mono text-ink-2">
-              {commandResult.command.state}/{commandResult.command.camera}/
-              {commandResult.command.overlay}
-              /{commandResult.command.playback}
-            </span>{" "}
-            {commandResult.accepted ? "passed the server allow-list" : "was rejected"}
-            {/* `delivered` only means the browser's send resolved. Without a
-                live stream there is no data channel for Kit to read it from. */}
-            {commandResult.delivered && connected
-              ? " and was sent over the stream's data channel."
-              : commandResult.delivered
-                ? "; the stream is not live, so Kit did not receive it. "
-                : "; not delivered. "}
-            {commandResult.reason}
+            <span className="font-semibold text-negative">View change not applied.</span>{" "}
+            {commandProblem}
           </p>
         ) : null}
       </div>

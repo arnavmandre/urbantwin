@@ -18,6 +18,8 @@ const STREAM_WIDTH = 1280;
 const STREAM_HEIGHT = 720;
 const STREAM_FPS = 30;
 const MEDIA_STREAM_WAIT_MS = 15000;
+/** Wait for a drag-resize to settle before asking Kit to re-render. */
+const FIT_DEBOUNCE_MS = 300;
 /** Local Kit signaling should answer well before this; fail instead of spinning forever. */
 const CONNECT_TIMEOUT_MS = 45_000;
 
@@ -84,10 +86,12 @@ export const kitWebRtcViewerAdapter: ViewerAdapter = {
     const streamer = new AppStreamer();
     let tornDown = false;
     let sawStartSuccess = false;
+    let stopFitting: () => void = () => undefined;
 
     const teardown = async () => {
       if (tornDown) return;
       tornDown = true;
+      stopFitting();
       try {
         await streamer.terminate();
       } catch {
@@ -153,6 +157,10 @@ export const kitWebRtcViewerAdapter: ViewerAdapter = {
 
         if (message.status === EventStatus.SUCCESS) {
           sawStartSuccess = true;
+          if (!mediaElements.ownsVideo) {
+            stopFitting();
+            stopFitting = fitStreamToElement(streamer, mediaElements.video);
+          }
           void publishStreamWhenReady(
             mediaElements.video,
             signal,
@@ -312,6 +320,63 @@ export async function sendAllowListedViewCommand(
       command,
     };
   }
+}
+
+/**
+ * Ask Kit to render at the on-screen video's aspect ratio, so the picture fills
+ * the workspace instead of a 16:9 frame letterboxed into it.
+ *
+ * Not the library's `fitStreamResolution`: that clamps width and height
+ * independently to the configured maximum, so a 1700x870 element becomes a
+ * 1280x720 request and the aspect is lost. Here the element is scaled as a
+ * whole into the 1280x720 pixel budget (never above device pixels), so the
+ * GPU never renders more than it did before. Kit accepts this only with
+ * /exts/omni.kit.livestream.app/primaryStream/allowDynamicResize=true, which
+ * launch_urbantwin_streaming.bat passes.
+ */
+function fitStreamToElement(streamer: AppStreamer, video: HTMLVideoElement): () => void {
+  let timer: number | undefined;
+  let last = "";
+
+  const apply = () => {
+    // false = Kit said no; null = Kit has not answered, so try anyway.
+    if (streamer.allowDynamicResize === false) return;
+    const size = fittedStreamSize(video.clientWidth, video.clientHeight);
+    if (!size) return;
+    const key = `${size.width}x${size.height}`;
+    if (key === last) return;
+    last = key;
+    streamer.resize(size.width, size.height).catch(() => {
+      last = ""; // let the next resize retry
+    });
+  };
+
+  const observer = new ResizeObserver(() => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(apply, FIT_DEBOUNCE_MS);
+  });
+  observer.observe(video);
+  // Kit confirms dynamic-resize support shortly after the stream starts.
+  const confirmTimer = window.setTimeout(apply, 1500);
+
+  return () => {
+    observer.disconnect();
+    window.clearTimeout(timer);
+    window.clearTimeout(confirmTimer);
+  };
+}
+
+/** Element size scaled uniformly into the stream budget; multiples of 8 for the encoder. */
+export function fittedStreamSize(
+  clientWidth: number,
+  clientHeight: number,
+  pixelRatio = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1,
+): { width: number; height: number } | null {
+  if (clientWidth < 64 || clientHeight < 64) return null;
+  const scale = Math.min(STREAM_WIDTH / clientWidth, STREAM_HEIGHT / clientHeight, pixelRatio);
+  const width = Math.floor((clientWidth * scale) / 8) * 8;
+  const height = Math.floor((clientHeight * scale) / 8) * 8;
+  return width >= 64 && height >= 64 ? { width, height } : null;
 }
 
 function offlineState(config: StreamConfig): ViewerState {
