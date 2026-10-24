@@ -96,6 +96,19 @@ export async function validateScenario(
     };
   }
 
+  // Recorded fixtures are London only; replaying one as a Pune run would misrepresent it.
+  if (raw.city !== undefined && raw.city !== "london") {
+    return {
+      ok: false,
+      error: {
+        error: {
+          code: "validation_failed",
+          message: "Pune runs need the live API (set URBANTWIN_API_BASE). Recorded fixtures are London only.",
+        },
+      },
+    };
+  }
+
   const request: RunRequest = {
     temperature: raw.temperature as number,
     humidity: raw.humidity as number,

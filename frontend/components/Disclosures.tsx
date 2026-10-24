@@ -1,6 +1,12 @@
 import { Card } from "@/components/ui/Card";
 import type { CityFacts, Health } from "@/lib/types";
 
+/** Fallback for fixtures recorded before the backend sent per-city limitations (all London). */
+const LONDON_LIMITATIONS = [
+  "Not a time-evolving crowd simulation. The animation interpolates between 60 fixed snapshots at one equilibrium.",
+  "Not a surveyed skyline: 223 of 623 building heights come from OSM, the rest are inferred.",
+];
+
 /**
  * Prototype limitations, kept visible but compact.
  *
@@ -52,14 +58,9 @@ export function Disclosures({
               supports distributional consistency only, and its scenarios confound
               temperature, crowding and shade.
             </li>
-            <li>
-              Not a time-evolving crowd simulation. The animation interpolates
-              between 60 fixed snapshots at one equilibrium.
-            </li>
-            <li>
-              Not a surveyed skyline: 223 of 623 building heights come from OSM, the
-              rest are inferred.
-            </li>
+            {(city?.limitations ?? LONDON_LIMITATIONS).map((text) => (
+              <li key={text}>{text}</li>
+            ))}
           </ul>
         </div>
 

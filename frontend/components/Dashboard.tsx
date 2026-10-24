@@ -24,7 +24,7 @@ import { Pill } from "@/components/ui/Pill";
 import { cx } from "@/lib/cx";
 import type { Bootstrap } from "@/lib/server/bootstrap";
 import { useRunner } from "@/lib/use-runner";
-import type { RunState, RunSummary, ScenarioInput } from "@/lib/types";
+import type { CityKey, RunState, RunSummary, ScenarioInput } from "@/lib/types";
 import type { ViewerState } from "@/lib/viewer";
 
 /**
@@ -62,6 +62,12 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
       },
   );
   const [applyInterventions, setApplyInterventions] = useState(true);
+  const streamCity: CityKey | null =
+    streamConfig.status === "available" ? streamConfig.city ?? "london" : null;
+  // Start on the city the last run or the stream is about, so results and viewport agree.
+  const [city, setCity] = useState<CityKey>(
+    bootstrap.run?.city?.key ?? streamCity ?? "london",
+  );
   const impactRef = useRef<HTMLDivElement>(null);
   const revealImpactAfterRun = useRef(false);
   const [scrollToImpact, setScrollToImpact] = useState(false);
@@ -129,6 +135,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
       }
       void runner.start({
         ...scenario,
+        city,
         apply_recommended_interventions: apply,
         selected_recommendation_ids: options?.selectedRecommendationIds,
         animation_frames: 12,
@@ -136,7 +143,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
         debug_force: options?.debugFail ? "failed" : undefined,
       });
     },
-    [applyInterventions, runner, scenario],
+    [applyInterventions, city, runner, scenario],
   );
 
   const attempt = {
@@ -196,6 +203,10 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
         <ScenarioDrawer open={scenarioOpen} onClose={closeScenario} bottomInset={peekHeight}>
           <ScenarioControls
             plain
+            city={city}
+            onCityChange={setCity}
+            puneAvailable={health.mode === "live"}
+            streamCity={streamCity}
             catalog={scenarios}
             scenario={scenario}
             onScenarioChange={setScenario}

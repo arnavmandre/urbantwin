@@ -44,7 +44,11 @@ export interface ScenarioCatalog {
   recorded_scenario?: ScenarioInput & { run_id: string };
 }
 
+/** EXTENSION: which city a run targets (integration/cities.py). Omitted = London. */
+export type CityKey = "london" | "pune";
+
 export interface RunRequest extends ScenarioInput {
+  city?: CityKey;
   apply_recommended_interventions: boolean;
   selected_recommendation_ids?: RecommendationId[];
   animation_frames?: number;
@@ -213,6 +217,8 @@ export interface ControlReference {
 
 /** EXTENSION: what the simulated and rendered city actually contains. */
 export interface CityFacts {
+  /** EXTENSION: absent on older fixtures, which are all London. */
+  key?: CityKey;
   name: string;
   source: string;
   zones: number;
@@ -221,6 +227,8 @@ export interface CityFacts {
   visual_buildings: number;
   visual_trees: number;
   rendered_agent_cap: number;
+  /** EXTENSION: city-specific "what it is not" statements from the backend. */
+  limitations?: string[];
 }
 
 export interface RunSummary {
@@ -240,7 +248,8 @@ export interface RunSummary {
   city?: CityFacts;
   artifacts?: {
     omniverse_stage: string;
-    snapshot_pattern: string;
+    /** Null for Pune, which has no canonical snapshots. */
+    snapshot_pattern: string | null;
   };
   advisor_source?: AdvisorSource;
   warnings: string[];
@@ -288,6 +297,8 @@ export interface StreamConfig {
   ice_servers: RTCIceServerLike[];
   session_token: string | null;
   stage: string;
+  /** EXTENSION: the city Kit was launched on (demo_launch.ps1 -City). Absent = London. */
+  city?: CityKey;
   reason?: string;
   desktop_fallback?: string;
   references?: string[];

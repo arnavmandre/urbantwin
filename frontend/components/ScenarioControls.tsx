@@ -3,16 +3,23 @@
 import { useId } from "react";
 
 import { Card, CardHeader } from "@/components/ui/Card";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { cx } from "@/lib/cx";
 import {
   SCENARIO_FIELD_META,
   formatScenarioValue,
 } from "@/lib/metric-format";
 import type {
+  CityKey,
   ScenarioCatalog,
   ScenarioField,
   ScenarioInput,
 } from "@/lib/types";
+
+export const CITY_LABEL: Record<CityKey, string> = {
+  london: "London",
+  pune: "Pune",
+};
 
 const RANGES_NOTE =
   "Ranges are the simulator's accepted inputs. Values outside them are refused before a run starts.";
@@ -48,7 +55,17 @@ export function ScenarioControls({
   formError,
   className,
   plain = false,
+  city,
+  onCityChange,
+  puneAvailable,
+  streamCity,
 }: {
+  city: CityKey;
+  onCityChange: (city: CityKey) => void;
+  /** Pune has no recorded fixtures, so it needs the live API. */
+  puneAvailable: boolean;
+  /** City the Kit stream was launched on, or null when no stream is available. */
+  streamCity: CityKey | null;
   catalog: ScenarioCatalog;
   scenario: ScenarioInput;
   onScenarioChange: (scenario: ScenarioInput) => void;
@@ -75,6 +92,34 @@ export function ScenarioControls({
       ) : (
         <CardHeader eyebrow="Scenario" title="Simulation controls" description={RANGES_NOTE} />
       )}
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <span className="text-[13px] font-medium text-ink">City</span>
+        <SegmentedControl
+          size="sm"
+          ariaLabel="City to simulate"
+          value={city}
+          onChange={onCityChange}
+          segments={[
+            { value: "london", label: CITY_LABEL.london, disabled: busy },
+            {
+              value: "pune",
+              label: CITY_LABEL.pune,
+              disabled: busy || !puneAvailable,
+              title: puneAvailable
+                ? undefined
+                : "Pune runs need the live API (URBANTWIN_API_BASE); recorded fixtures are London only.",
+            },
+          ]}
+        />
+      </div>
+      {streamCity && streamCity !== city ? (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
+          The Omniverse stream is showing {CITY_LABEL[streamCity]}. Results will be for{" "}
+          {CITY_LABEL[city]}; relaunch with{" "}
+          <code className="font-mono">demo_launch.ps1 -City {city}</code> to see it streamed.
+        </p>
+      ) : null}
 
       <div className="mt-3 flex flex-wrap gap-2">
         {catalog.presets.map((preset) => {

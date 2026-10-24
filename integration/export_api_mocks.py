@@ -86,6 +86,23 @@ LIVE_RUN_WARNINGS = [
     *_SHARED_RUN_WARNINGS,
 ]
 
+
+def live_run_warnings(city=None) -> list[str]:
+    """Integrity list for a completed live run. London keeps its exact wording; Pune states its own facts."""
+    profile = city_profile(city)
+    if profile["key"] == "london":
+        return list(LIVE_RUN_WARNINGS)
+    heuristic, _population, calibration = _SHARED_RUN_WARNINGS[:3]
+    return [
+        "Live run: these numbers came from a just-executed run of the same Simulation/main.py "
+        f"on {profile['city_file']} for this request.",
+        heuristic,
+        "Population is a population equivalent, not a headcount. Every simulated citizen is "
+        "rendered as one walker.",
+        calibration,
+        *profile["limitations"],
+    ]
+
 MOCK_HEALTH_NOTES = [
     "No Python HTTP API is running. Responses are recorded fixtures "
     "exported by integration/export_api_mocks.py.",

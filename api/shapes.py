@@ -15,8 +15,8 @@ from api.stream_probe import (  # noqa: E402
     probe_stream_endpoint,
 )
 from integration.export_api_mocks import (  # noqa: E402
-    LIVE_RUN_WARNINGS,
     health_fixture,
+    live_run_warnings,
     model_card_fixture,
     run_summary,
     scenarios_fixture,
@@ -45,7 +45,7 @@ _LIVE_STATUS_WARNINGS = {
 }
 
 
-def live_warnings_for(status: str, *, has_report: bool = False) -> list[str]:
+def live_warnings_for(status: str, *, has_report: bool = False, city=None) -> list[str]:
     """Full live integrity list only when a report was actually produced.
 
     Complete runs always qualify. Failed runs qualify only when the worker
@@ -53,7 +53,7 @@ def live_warnings_for(status: str, *, has_report: bool = False) -> list[str]:
     cancelled, and failed-without-report use short status notes instead.
     """
     if status == "complete" or (status == "failed" and has_report):
-        return list(LIVE_RUN_WARNINGS)
+        return live_run_warnings(city)
     notes = _LIVE_STATUS_WARNINGS.get(status)
     if notes is not None:
         return list(notes)
@@ -78,7 +78,7 @@ def live_run_summary(
     if warnings is None:
         if has_report is None:
             has_report = status == "complete"
-        warnings = live_warnings_for(status, has_report=bool(has_report))
+        warnings = live_warnings_for(status, has_report=bool(has_report), city=city)
     return run_summary(
         report,
         created_utc,
