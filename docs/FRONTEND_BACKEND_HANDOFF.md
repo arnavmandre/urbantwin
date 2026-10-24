@@ -550,7 +550,7 @@ frontend/
     BeforeAfterChart.tsx
     BehaviorLegend.tsx
     ProblemAreas.tsx
-    AdvisorPanel.tsx
+    AdvisorChat.tsx
     ModelTrustPanel.tsx
     RunStatus.tsx
   lib/

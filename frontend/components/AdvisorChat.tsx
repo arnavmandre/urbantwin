@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ACTION_LABELS } from "@/components/RagAdvisorPanel";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { api } from "@/lib/api";
@@ -13,6 +12,13 @@ type Message =
   | { role: "planner"; text: string }
   | { role: "advisor"; response: AdvisorChatResponse }
   | { role: "note"; text: string };
+
+const ACTION_LABELS: Record<RecommendationId, string> = {
+  increase_shade: "Increase shade",
+  improve_drainage: "Improve drainage",
+  alternative_pedestrian_routes: "Open alternative pedestrian routes",
+  no_major_intervention: "No major intervention",
+};
 
 const STARTERS = [
   "What is the biggest problem in this run?",

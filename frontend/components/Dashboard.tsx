@@ -4,10 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AdvisorChat } from "@/components/AdvisorChat";
-import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { AdvisorImpactSummary } from "@/components/AdvisorImpactSummary";
-import { RunExplainPanel } from "@/components/RunExplainPanel";
-import { RagAdvisorPanel } from "@/components/RagAdvisorPanel";
 import { BeforeAfterChart } from "@/components/BeforeAfterChart";
 import { BehaviorLegend } from "@/components/BehaviorLegend";
 import { CitizenInspector } from "@/components/CitizenInspector";
@@ -336,43 +333,16 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
                 {arm ? <ProblemAreas summary={arm} state={shown} /> : null}
               </ResultsSection>
 
-              {(health.mode === "live" && run.status === "complete") || run.advisor ? (
-                <ResultsSection title="Advisor and calculation details">
-                  {health.mode === "live" && run.status === "complete" ? (
-                    <>
-                      {/* not keyed by run: the conversation continues across Apply & re-run */}
-                      <AdvisorChat
-                        runId={run.run_id}
-                        busy={runner.active}
-                        onApply={(selectedRecommendationIds) =>
-                          submit({ forceApply: true, selectedRecommendationIds })
-                        }
-                      />
-                      <RagAdvisorPanel
-                        key={`rag-${run.run_id}`}
-                        runId={run.run_id}
-                        busy={runner.active}
-                        onApplySelected={(selectedRecommendationIds) =>
-                          submit({ forceApply: true, selectedRecommendationIds })
-                        }
-                      />
-                      <RunExplainPanel runId={run.run_id} />
-                    </>
-                  ) : null}
-                  {run.advisor ? (
-                    <div>
-                      <p className="mb-3 text-[12px] leading-relaxed text-ink-3">
-                        These deterministic rules convert selected AI actions into executable simulator parameters and identify affected locations.
-                      </p>
-                      <AdvisorPanel
-                        advisor={run.advisor}
-                        source={run.advisor_source}
-                        applied={run.intervention}
-                        canApply={!runner.active}
-                        onApplyRecommended={() => submit({ forceApply: true })}
-                      />
-                    </div>
-                  ) : null}
+              {health.mode === "live" && run.status === "complete" ? (
+                <ResultsSection title="AI advisor">
+                  {/* not keyed by run: the conversation continues across Apply & re-run */}
+                  <AdvisorChat
+                    runId={run.run_id}
+                    busy={runner.active}
+                    onApply={(selectedRecommendationIds) =>
+                      submit({ forceApply: true, selectedRecommendationIds })
+                    }
+                  />
                 </ResultsSection>
               ) : null}
 

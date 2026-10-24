@@ -378,66 +378,8 @@ export interface ViewCommandResult {
 }
 
 // --------------------------------------------------------------------------
-// Constrained LLM explanation (Phase 16)
+// AI advisor chat (live API only)
 // --------------------------------------------------------------------------
-
-export type ExplainSource = "deterministic" | "llm";
-
-export interface ExplainResponse {
-  run_id: string;
-  source: ExplainSource;
-  text: string;
-  claims: string[];
-  /** Present when an LLM was configured but fell back to the template. */
-  unavailable_reason?: string;
-}
-
-// --------------------------------------------------------------------------
-// Retrieval-grounded advisor (live API only)
-// --------------------------------------------------------------------------
-
-export interface RetrievedKnowledge {
-  knowledge_id: string;
-  similarity_score: number;
-  problem_category: string;
-  intervention: string;
-  description: string;
-  argus_recommendation_id: RecommendationId;
-  target_metrics: string[];
-  tradeoffs: string[];
-  source: { title: string; url: string; status: "VERIFIED" | "NEEDS_SOURCE" };
-}
-
-export interface RagRecommendation {
-  rank: number;
-  argus_recommendation_id: RecommendationId;
-  testable: true;
-  knowledge_id?: string;
-  intervention?: string;
-  reason?: string;
-  target_metrics?: string[];
-  tradeoffs?: string[];
-  source?: RetrievedKnowledge["source"];
-}
-
-export interface RagAdvisorResponse {
-  run_id: string;
-  source: "rag_llm" | "deterministic";
-  advisor_mode: "rag_llm" | "deterministic_fallback";
-  fallback_used: boolean;
-  model?: string;
-  retrieval_backend?: "faiss_minilm" | "lexical_fallback" | string;
-  knowledge_hash?: string;
-  unavailable_reason?: string;
-  primary_problem?: {
-    category: string;
-    severity: "low" | "moderate" | "high" | "unknown";
-    target_id: string | null;
-    evidence: string[];
-  };
-  recommendations: RagRecommendation[];
-  retrieved_knowledge: RetrievedKnowledge[];
-}
 
 /** POST /api/runs/{id}/chat. Proposals are already validated against the executable actions. */
 export interface AdvisorChatResponse {

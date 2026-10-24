@@ -23,8 +23,6 @@ import type {
   StreamConfig,
   ViewCommand,
   ViewCommandResult,
-  ExplainResponse,
-  RagAdvisorResponse,
   AdvisorChatResponse,
 } from "./types";
 
@@ -108,18 +106,6 @@ export const api = {
     request<ViewCommandResult>(`/runs/${encodeURIComponent(runId)}/view`, {
       method: "POST",
       body: JSON.stringify(command),
-    }),
-
-  explain: (runId: string) =>
-    request<ExplainResponse>(`/runs/${encodeURIComponent(runId)}/explain`, {
-      method: "POST",
-      body: "{}",
-    }),
-
-  advise: (runId: string) =>
-    request<RagAdvisorResponse>(`/runs/${encodeURIComponent(runId)}/advise`, {
-      method: "POST",
-      body: "{}",
     }),
 
   chat: (runId: string, message: string, sessionId: string | null) =>

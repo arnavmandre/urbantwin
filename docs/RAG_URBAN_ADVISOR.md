@@ -64,8 +64,9 @@ record that was actually retrieved. It also checks any supplied route, building,
 or zone target against the bounded report. The existing simulator owns action
 strengths and all before/after computation.
 
-The frontend lets the operator select one or more returned actions. “Apply
-selected and re-simulate” starts a new run with the optional
+The dashboard no longer shows this ranking panel: its "AI advisor" section is the
+chat below, and `POST /advise` stays available on the API. Whichever path
+proposes actions, applying them starts a new run with the optional
 `selected_recommendation_ids` request field. The API accepts only the simulator's
 allow-list, the pipeline forwards those IDs to `Simulation/main.py`, and the
 simulator passes them through its existing `recommended_interventions(...)`

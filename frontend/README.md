@@ -109,7 +109,7 @@ app/
   api/                         mock-serving / proxying route handlers
 components/                    OmniverseViewer, ScenarioControls, MetricGrid,
                                BeforeAfterChart, BehaviorLegend, ProblemAreas,
-                               AdvisorPanel, ModelTrustPanel, RunStatus, ...
+                               AdvisorChat, ModelTrustPanel, RunStatus, ...
 lib/
   types.ts                     the API contract in TypeScript
   api.ts                       browser client
