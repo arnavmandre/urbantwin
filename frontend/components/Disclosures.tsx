@@ -79,9 +79,11 @@ export function Disclosures({
             </p>
           ) : null}
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-            The canonical visualisation contract is documented in
-            docs/INTEGRATION_CONTRACT.md; the product contract this interface was
-            built against is docs/FRONTEND_BACKEND_HANDOFF.md.
+            {city?.key === "pune"
+              ? "Pune animates straight from the simulator report and does not use the canonical snapshot contract (docs/PUNE_CITY.md); "
+              : "The canonical visualisation contract is documented in docs/INTEGRATION_CONTRACT.md; "}
+            the product contract this interface was built against is
+            docs/FRONTEND_BACKEND_HANDOFF.md.
           </p>
         </div>
       </div>

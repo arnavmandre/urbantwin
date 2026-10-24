@@ -79,9 +79,11 @@ def run_pune(run_id, *, temperature, humidity, rainfall, population, interventio
         return result
 
     try:
-        report = timed("simulation", lambda: pune_sim.simulate(
+        report, sim_command = timed("simulation", lambda: pune_sim.simulate(
             staging / "simulation_report.json", temperature=temperature, humidity=humidity,
             rainfall=rainfall, population=population, interventions=interventions))
+        # same shape as London's stage record; analytics/import_runs.py reads the city file from this command
+        stages[-1]["command"] = sim_command
         walkers = timed("agents", lambda: pune_sim.animate(report, staging / "usd"))
         view = timed("view_mask", lambda: pune_view.write_run_layer(staging / "usd", report,
                                                                    staging / "usd" / "view_run.usdc"))

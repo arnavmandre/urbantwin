@@ -9,14 +9,15 @@ Inputs : pune_center.osm, city_base.usda (from build_script.py), Argus Simulatio
 Outputs: city_pune.json, citizens_pune.json, pune_routes.json, traffic.usdc, main_live.usda (1 km, animated),
          and for the default scenario sim_report_pune.json + agents_before.usdc / agents_after.usdc.
 
-Honesty notes (also written to manifest.json["simulation"]):
+Honesty notes (also written to manifest.generated.json["simulation"]):
 - Route choice, travel time and behaviour come from the unmodified Argus simulator.
 - Citizen behaviour is calibrated on the Argus phase10 survey (41 participants), not Pune residents.
 - Home/destination is assign_homes.py's trip heuristic, not survey data.
-- Route shade = share of the route within 10 m of a real OSM tree; base crowding by road class,
-  drainage and flood exposure are fixed heuristics (no Pune data).
-- Walkers move along their simulator-chosen route at their own speed in real time, on the pavement,
-  ping-ponging. Behaviour colour is one equilibrium, not a time-evolving simulation.
+- Route shade = share of the route within 10 m of a real OSM tree (greenery reuses it); base crowding by
+  road class, drainage and flood exposure are fixed heuristics (no Pune data).
+- Walkers move along their simulator-chosen route at their own speed in real time, keeping left on the
+  pavement and looping back on the other side. Behaviour colour is one equilibrium, not a time-evolving
+  simulation.
 - Cars are ILLUSTRATIVE: no traffic data exists; density and speed are fixed assumptions.
 """
 import heapq
@@ -44,7 +45,6 @@ TIME_SCALE = 1.0       # real time: walkers at their survey speeds, vehicles at 
 DURATION_S = 120       # loop length; at real speed a short loop would barely move anyone
 SAMPLE_HZ = 6          # positions stored 6x a second; USD interpolates the frames between
 TIMECODES = [k * FPS // SAMPLE_HZ for k in range(DURATION_S * SAMPLE_HZ)]
-FRAMES = len(TIMECODES)  # number of time samples (kept for callers that iterate samples)
 HOMES = 90
 CITIZENS = 600
 CAR_SPACING_M = 70.0   # illustrative density: one car per 70 m of carriageway
@@ -181,11 +181,6 @@ def point_at(poly, cum, s):
     tx, ty = (x1 - x0, y1 - y0)
     n = math.hypot(tx, ty) or 1.0
     return (x0 + tx * t, y0 + ty * t), (tx / n, ty / n)
-
-
-def pingpong(s, L):
-    s %= 2 * L
-    return (s, 1.0) if s <= L else (2 * L - s, -1.0)
 
 
 def dedupe(poly, eps=0.05):
@@ -528,7 +523,8 @@ def write_agents(citizens, routes, speeds, style, out_path):
         ori_attr.Set(Vt.QuathArray(oris), code)
     inst.GetPrim().CreateAttribute("urbantwin:note", Sdf.ValueTypeNames.String, custom=True).Set(
         "One low-poly pedestrian per simulated citizen on its simulator-chosen route at its survey-calibrated "
-        "speed, in real time, on the pavement beside the carriageway, ping-pong. Shirt colour = behaviour "
+        "speed, in real time, keeping left on the pavement beside the carriageway, looping out and back "
+        "across the street at each end. Shirt colour = behaviour "
         "(one equilibrium). No collision avoidance: walkers can brush past each other.")
     stage.GetRootLayer().Save()
     return len(walkers)
@@ -704,7 +700,8 @@ def simulate(report_path, *, temperature=None, humidity=None, rainfall=None, pop
     for intervention in interventions:
         cmd += ["--intervention-id", intervention]
     run(cmd, cwd=ARGUS / "Simulation")
-    return json.loads(Path(report_path).read_text(encoding="utf-8"))
+    # the command is returned so run manifests can record it (analytics reads the city file from it)
+    return json.loads(Path(report_path).read_text(encoding="utf-8")), [str(c) for c in cmd]
 
 
 def animate(report, out_dir):
@@ -726,12 +723,12 @@ def behaviour_counts(citizens):
 
 def main():
     city, graph_nodes, n_cars = prepare()
-    report = simulate(HERE / "sim_report_pune.json")
+    report, _ = simulate(HERE / "sim_report_pune.json")
     walkers = animate(report, HERE)
 
-    mpath = HERE / "manifest.json"
-    manifest = json.loads(mpath.read_text(encoding="utf-8"))
-    manifest["simulation"] = {
+    # generated facts go to a gitignored sidecar; manifest.json stays the committed Blender build record
+    generated = read_generated()
+    generated["simulation"] = {
         "note": ("User-approved extension beyond the original spec (which said no simulation files). "
                  "Agents come from the unmodified Argus simulator; cars are illustrative."),
         "simulator": "Argus Simulation/main.py (unmodified)",
@@ -743,14 +740,29 @@ def main():
         "default_scenario": report["scenario"],
         "behaviour_counts": {arm: behaviour_counts(report[arm]["citizens"]) for arm, _ in ARMS},
         "headline_metrics_before": report["before"]["metrics"],
-        "heuristic_inputs": "drainage 0.5, flood_exposure 0.3, capacity/cooling by type, base_crowding by road class",
+        "heuristic_inputs": ("drainage 0.5, flood_exposure 0.3, capacity/cooling by type, base_crowding by road "
+                             "class, route greenery = route shade (share within 10 m of an OSM tree)"),
         "walkers": walkers, "vehicles_illustrative": n_cars, "auto_rickshaw_share": AUTO_SHARE,
         "agent_models": "low-poly people and vehicles, illustrative geometry (not data)",
         "before_after": "demoState variant on /World: Stressed = before arm, Intervention = simulator after arm",
         "playback": f"{DURATION_S} s loop in real time, positions sampled {SAMPLE_HZ}x/s and interpolated by USD",
     }
-    mpath.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    write_generated(generated)
     print(f"walkers {walkers}, vehicles {n_cars}. Next: run pune_view.py")
+
+
+GENERATED = HERE / "manifest.generated.json"
+
+
+def read_generated():
+    try:
+        return json.loads(GENERATED.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def write_generated(data):
+    GENERATED.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

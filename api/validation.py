@@ -126,7 +126,7 @@ def validate_run_request(body: dict) -> tuple[dict | None, dict | None]:
         normalized["animation_duration_seconds"] = DEFAULT_ANIMATION_DURATION_SECONDS
 
     city = body.get("city", DEFAULT_CITY)
-    if city not in CITIES:
+    if not isinstance(city, str) or city not in CITIES:
         fields["city"] = f"must be one of {sorted(CITIES)}"
     else:
         normalized["city"] = city

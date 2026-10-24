@@ -15,7 +15,7 @@ import { MetricGrid } from "@/components/MetricGrid";
 import { ProblemAreas } from "@/components/ProblemAreas";
 import { ResultsDrawer, ResultsSection } from "@/components/ResultsDrawer";
 import { RunProgressLine, RunStatus } from "@/components/RunStatus";
-import { ScenarioControls } from "@/components/ScenarioControls";
+import { CITY_LABEL, ScenarioControls } from "@/components/ScenarioControls";
 import { ScenarioDrawer } from "@/components/ScenarioDrawer";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -158,7 +158,10 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
       <SiteHeader
         health={health}
         viewerStatus={viewerStatus}
-        sceneLabel={run?.city?.name ?? streamConfig.stage}
+        // "Scene shown in the viewport": while streaming that is the streamed city, not the last run's.
+        sceneLabel={
+          streamCity ? CITY_SCENE[streamCity] : run?.city?.name ?? streamConfig.stage
+        }
         aboutOpen={aboutOpen}
         onAboutOpenChange={setAboutOpen}
         analyticsHref={analyticsHref(bootstrap.analyticsUrl, run)}
@@ -182,6 +185,15 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
             onStatusChange={setViewerStatus}
             bottomInset={peekHeight}
             topRight={
+              <>
+              {streamCity && run?.city?.key && run.city.key !== streamCity ? (
+                <span
+                  role="status"
+                  className="rounded-[10px] bg-surface/90 px-2.5 py-1.5 text-[11px] font-medium text-ink-2 shadow-[var(--shadow-card)]"
+                >
+                  Stream shows {CITY_LABEL[streamCity]}; results are {CITY_LABEL[run.city.key]}
+                </span>
+              ) : null}
               <button
                 ref={scenarioButtonRef}
                 type="button"
@@ -196,6 +208,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
                   <span aria-label="Run in progress" className="breathe size-2 rounded-full bg-accent-ink" />
                 ) : null}
               </button>
+              </>
             }
           />
         </div>
@@ -418,6 +431,11 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
  * Deep link into the Grafana dashboard, focused on the run on screen. Only a
  * completed live run is passed: it is the only kind the importer has stored.
  */
+const CITY_SCENE: Record<CityKey, string> = {
+  london: "Russell Square, London",
+  pune: "Shaniwar Wada, central Pune",
+};
+
 function analyticsHref(base: string | null, run: RunSummary | null): string | null {
   if (!base) return null;
   const url = `${base}/d/argus-observatory/argus-urban-risk-observatory?orgId=1`;

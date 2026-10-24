@@ -30,9 +30,33 @@ class RunPuneTests(unittest.TestCase):
             self.assertFalse((Path(root) / "data" / "runs" / "pune-test.staging").exists())
         self.assertEqual(result["status"], "complete")
         self.assertEqual(manifest["city"], "pune")
+        from analytics.import_runs import _city_from_stages
+        self.assertEqual(_city_from_stages(manifest["stages"]), "city_pune.json")
         self.assertEqual(report["scenario"]["temperature"], 38)
         self.assertEqual(manifest["walkers"]["before"], len(report["before"]["citizens"]))
         self.assertGreater(report["intervention"].get("shade_boost", 0), 0)
+
+    def test_view_run_opinions_win_in_the_composed_view(self):
+        """Everything view_run.usdc authors (ProblemZone camera, masks) must be what the 400 m view shows."""
+        from pxr import Sdf, Usd
+        stage = Usd.Stage.Open(str(HERE / "main_view_400m.usda"))
+        run_layer = Sdf.Layer.FindOrOpen(str(HERE / "view_run.usdc"))
+        checked = 0
+
+        def visit(path):
+            nonlocal checked
+            spec = run_layer.GetPrimAtPath(path)
+            for prop in spec.properties:
+                if not isinstance(prop, Sdf.AttributeSpec) or prop.HasInfo("timeSamples"):
+                    continue
+                composed = stage.GetPrimAtPath(path).GetAttribute(prop.name)
+                strongest = composed.GetPropertyStack(Usd.TimeCode.Default())[0].layer
+                self.assertEqual(strongest.identifier, run_layer.identifier, f"{path}.{prop.name} is shadowed")
+                checked += 1
+            for child in spec.nameChildren:
+                visit(child.path)
+        visit(Sdf.Path("/World/Cameras"))
+        self.assertGreater(checked, 0)
 
     def test_rejects_reserved_run_id(self):
         with self.assertRaises(run_pune.PipelineError):

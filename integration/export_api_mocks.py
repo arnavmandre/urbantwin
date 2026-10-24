@@ -97,8 +97,10 @@ def live_run_warnings(city=None) -> list[str]:
         "Live run: these numbers came from a just-executed run of the same Simulation/main.py "
         f"on {profile['city_file']} for this request.",
         heuristic,
-        "Population is a population equivalent, not a headcount. Every simulated citizen is "
-        "rendered as one walker.",
+        "Population is a population equivalent, not a headcount. Every simulated citizen is animated "
+        "as one walker on the 1 km model; the streamed 400 m view shows only those inside the square"
+        + (f" (about {round(profile['walkers_visible_mean'])} at a time)." if profile.get("walkers_visible_mean")
+           else "."),
         calibration,
         *profile["limitations"],
     ]
@@ -186,8 +188,9 @@ def run_summary(
             "routes": len(before["routes"]),
             "visual_buildings": profile["visual_buildings"],
             "visual_trees": profile["visual_trees"],
-            # London renders through the phase3 schema cap; Pune draws every simulated citizen
-            "rendered_agent_cap": AGENT_CAP if profile["key"] == "london" else len(before["citizens"]),
+            # London renders through the phase3 schema cap; Pune's 400 m view shows those inside the square
+            "rendered_agent_cap": (AGENT_CAP if profile["key"] == "london"
+                                   else profile.get("walkers_visible_max") or len(before["citizens"])),
             "limitations": profile["limitations"],
         },
         "artifacts": {

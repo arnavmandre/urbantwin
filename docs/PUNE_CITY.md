@@ -11,6 +11,7 @@ pune_center.osm (Overpass, unmodified, stored as binary)
   -> build_script.py      Blender 4.x, headless: footprints, heights, materials, USD export,
                           pxr post-process, section-7 validation, render
                           -> city_base.usda, environment.usda, main.usda, manifest.json   (committed)
+                          pune_sim/pune_view record their facts in manifest.generated.json (gitignored)
   -> pune_sim.py          simulator city + survey citizens + route polylines + illustrative traffic,
                           default-scenario run, both arms animated  -> main_live.usda (1 km)
   -> pune_view.py         400 m view: clipping, realistic look, cameras -> main_view_400m.usda
@@ -31,9 +32,9 @@ so normal use does not need Blender.
 | Piece | Pune behaviour |
 |---|---|
 | API `POST /api/runs` | optional `"city": "london" \| "pune"` (default London). `api/run_manager.py` runs the city's pipeline from `integration/cities.py`. |
-| Run folder | `data/runs/<id>/simulation_report.json` + `manifest.json` (`"city": "pune"`), same shape as London, so summaries, citizens, explain/advisor and `analytics/import_runs.py` work unchanged. |
-| Run summary | city facts, limitations and warnings come from the city registry; a Pune run never shows London counts. |
-| Dashboard | City switch in the Scenario drawer. Pune is disabled in mock mode (fixtures are London only). A note appears when the stream shows a different city. |
+| Run folder | `data/runs/<id>/simulation_report.json` + `manifest.json` (`"city": "pune"`), same shape as London. The `simulation` stage records the simulator command, so `analytics/import_runs.py` stores `city_id = city_pune.json` (London: `city_osm.json`). Failed or cancelled runs still import without a city. |
+| Run summary | city facts, limitations and warnings come from the city registry; a Pune run never shows London counts. Rendered-walker figures refer to the 400 m view (about 40 % of citizens at a time). |
+| Dashboard | City switch in the Scenario drawer. Pune is disabled in mock mode (fixtures are London only). While streaming, the header names the streamed city, and a note on the viewport appears when the last run is for the other city. |
 | Kit stream | `tools\demo_launch.ps1 -City pune` (add `-Force` to replace a running stream). Sets `URBANTWIN_STAGE` for the Kit launch scripts and `URBANTWIN_STREAM_CITY` for the API. |
 | Before/After | `demoState` variant on `/World`: `Stressed` = before arm, `Intervention` = the simulator's after arm (same citizens re-simulated under the applied intervention). The existing Kit `view_commands` handler drives it unchanged. |
 | Cameras | `/World/Cameras/{Overview, Aerial, Street, ProblemZone}`; ProblemZone is re-aimed per run at the run's first problem zone. |
@@ -52,13 +53,14 @@ follows rule 4 exactly.
   route choice, travel time, behaviour and metrics from the unmodified simulator.
 - Heights: 40 of 2,069 from OSM tags; 127 interpolated from neighbours; the rest inferred from class.
 - Heuristic inputs (no Pune data): drainage 0.5, flood exposure 0.3, capacity/cooling by building type,
-  base crowding by road class. Route shade = share of the route within 10 m of a real OSM tree.
+  base crowding by road class. Route shade = share of the route within 10 m of a real OSM tree, and route
+  greenery reuses the same value.
 - Citizens: calibrated on the 41-person Argus survey, not Pune residents; homes/destinations are the
   `phase10/assign_homes.py` heuristic.
-- Animation: each walker ping-pongs along its simulator-chosen route at its own survey speed, in real
-  time, on the pavement beside the carriageway (corners rounded). 120 s loop, sampled 6×/s and
-  interpolated by USD. No collision avoidance: walkers can brush past each other. Not a time-evolving
-  simulation.
+- Animation: each walker follows its simulator-chosen route at its own survey speed, in real time,
+  keeping left on the pavement beside the carriageway, crossing the street at each end and returning on
+  the other pavement (corners rounded, no jumps). 120 s loop, sampled 6×/s and interpolated by USD.
+  No collision avoidance: walkers can brush past each other (~1 %). Not a time-evolving simulation.
 - Vehicles share one speed per road and are evenly spaced, so they never overlap on a road; vehicles on
   crossing roads can still meet at junctions (there is no traffic model).
 - Vehicles: illustrative only (one per 70 m of road, ~20 km/h, ~30 % auto-rickshaws, driving on the left).

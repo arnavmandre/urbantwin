@@ -14,3 +14,4 @@ view_run.usdc
 facade_tile.png
 # Spec deliverable render (build_script.py); kept out of git for size
 render_aerial_45.png
+manifest.generated.json

@@ -24,9 +24,10 @@ class ValidationTests(unittest.TestCase):
                 "apply_recommended_interventions": False}
         self.assertEqual(validate_run_request(base)[0]["city"], "london")
         self.assertEqual(validate_run_request({**base, "city": "pune"})[0]["city"], "pune")
-        request, error = validate_run_request({**base, "city": "paris"})
-        self.assertIsNone(request)
-        self.assertIn("city", error["error"]["fields"])
+        for bad in ("paris", [], {"key": "pune"}, 3):
+            request, error = validate_run_request({**base, "city": bad})
+            self.assertIsNone(request)
+            self.assertIn("city", error["error"]["fields"])
 
     def test_rejects_out_of_range_temperature(self):
         body = {

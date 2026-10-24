@@ -14,7 +14,7 @@ Nothing pokes out of the square:
 - the ground plane is exactly the square,
 - walkers and vehicles are hidden (PointInstancer invisibleIds) on any frame they are not fully inside.
 
-Look (appearance only, NOT data - recorded in manifest.json["view_400m"]):
+Look (appearance only, NOT data - recorded in manifest.generated.json["view_400m"]):
 - building walls: one generated storey/window facade tile, UV-mapped in metres (3 m bay x 3.2 m storey),
   tinted with plaster colours picked per building from a hash of its OSM id; separate concrete/terracotta roofs.
   The windows do not come from OSM. Heritage and religious buildings stay plain stone, no windows.
@@ -30,7 +30,7 @@ from pathlib import Path
 import numpy as np
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdShade, Vt
 
-import pune_sim  # reuse new_layer / preview_material / FRAMES; importing does not run the simulator
+import pune_sim  # reuse new_layer / preview_material / TIMECODES; importing does not run the simulator
 
 HERE = Path(__file__).resolve().parent
 HALF = 200.0  # 400 m x 400 m, centred on Shaniwar Wada (scene origin)
@@ -279,12 +279,11 @@ def build_view():
     look_at_camera(stage, "Aerial", (0, 0, 560), (0, 0, 0), 24, up=(0, 1, 0))
     eye, target = street_shot()
     look_at_camera(stage, "Street", eye, target, 18)
-    look_at_camera(stage, "ProblemZone", (-90, -90, 80), (0, 0, 0), 24)  # re-aimed per run in view_run.usdc
+    # ProblemZone is authored only in view_run.usdc: an opinion here would be stronger and pin it forever
     root.Save()
 
-    mpath = HERE / "manifest.json"
-    manifest = json.loads(mpath.read_text(encoding="utf-8"))
-    manifest["view_400m"] = {
+    generated = pune_sim.read_generated()
+    generated["view_400m"] = {
         "file": "main_view_400m.usda", "square_m": 2 * HALF, "centre": "scene origin (Shaniwar Wada)",
         "note": "Display subset only; the simulator runs on the full 1 km tile.",
         "clipping": "flat layers clipped at the edge; buildings/trees/transit kept only if fully inside; "
@@ -294,7 +293,7 @@ def build_view():
         "appearance_not_data": ("Facade windows (facade_tile.png), per-building plaster tints and roof colours are "
                                 "illustrative appearance, not OSM data. Heights and footprints are unchanged."),
     }
-    mpath.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    pune_sim.write_generated(generated)
     print(json.dumps(counts))
 
 
@@ -362,7 +361,8 @@ def write_run_layer(agents_dir, report, out_path):
             out = np.nonzero((np.abs(p[:, 0]) > lim) | (np.abs(p[:, 1]) > lim))[0]
             inv_attr.Set(Vt.Int64Array(out.tolist()), code)
             seen.append(len(p) - len(out))
-        return {"total": len(p), "visible_per_frame_mean": round(float(np.mean(seen)), 1)}
+        return {"total": len(p), "visible_per_frame_mean": round(float(np.mean(seen)), 1),
+                "visible_per_frame_max": int(max(seen))}
 
     vset = stage.GetPrimAtPath("/World").GetVariantSets().AddVariantSet("demoState")
     for arm, variant in pune_sim.ARMS:
@@ -372,13 +372,13 @@ def write_run_layer(agents_dir, report, out_path):
         vset.SetVariantSelection(variant)
         with vset.GetVariantEditContext():
             walkers = UsdGeom.PointInstancer(stage.OverridePrim("/World/Agents/Walkers"))
-            visible[f"walkers_{arm}"] = mask(positions, walkers.CreateInvisibleIdsAttr(), 0.5)
+            visible[f"walkers_{arm}"] = mask(positions, walkers.CreateInvisibleIdsAttr(), 0.6)  # half a body (0.25 m) + one sample (0.33 m)
     vset.ClearVariantSelection()  # selection stays with main_live.usda / the Kit handler
 
     traffic = Usd.Stage.Open(str(HERE / "traffic.usdc"))
     cars = UsdGeom.PointInstancer(stage.OverridePrim("/World/Traffic/Cars"))
     visible["vehicles"] = mask(UsdGeom.PointInstancer(traffic.GetPrimAtPath("/World/Traffic/Cars")).GetPositionsAttr(),
-                               cars.CreateInvisibleIdsAttr(), 2.3)
+                               cars.CreateInvisibleIdsAttr(), 3.2)  # half a car (2.1 m) + one sample (1.1 m)
 
     zones = [z for z in report["before"].get("problem_zones", []) if isinstance(z, str) and ZONE_RE.match(z)]
     cx, cy = zone_centre(zones[0]) if zones else (0.0, 0.0)
@@ -390,7 +390,11 @@ def write_run_layer(agents_dir, report, out_path):
 def main():
     build_view()
     report = json.loads((HERE / "sim_report_pune.json").read_text(encoding="utf-8"))
-    print(json.dumps(write_run_layer(HERE, report, HERE / "view_run.usdc")))
+    result = write_run_layer(HERE, report, HERE / "view_run.usdc")
+    generated = pune_sim.read_generated()
+    generated["view_400m"]["default_run_visibility"] = result["visible"]
+    pune_sim.write_generated(generated)
+    print(json.dumps(result))
 
 
 if __name__ == "__main__":
