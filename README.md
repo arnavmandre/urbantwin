@@ -1,4 +1,4 @@
-# Argus AI
+# UrbanTwin AI
 
 Human-centric urban digital twin: a **Python pedestrian simulator**, an **OpenUSD / Omniverse** city stage, and a **web dashboard** that can run live scenarios and (optionally) stream the RTX viewport in the browser.
 
