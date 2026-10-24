@@ -193,12 +193,16 @@ export function RunProgressLine({
   run,
   attempt,
   onShowDetails,
+  onReset,
 }: {
   run: RunSummary | null;
   attempt: RunAttempt;
   onShowDetails: () => void;
+  /** Clears a failed or cancelled attempt; the last good results stay shown. */
+  onReset?: () => void;
 }) {
   const active = attempt.status === "queued" || attempt.status === "running";
+  const recoverable = attempt.status === "failed" || attempt.status === "cancelled";
   const headline = attempt.status !== "idle" ? attempt.status : (run?.status ?? "idle");
   const style = STATUS_STYLE[headline];
   const pct = Math.round(attempt.progress * 100);
@@ -213,10 +217,23 @@ export function RunProgressLine({
         <span className="min-w-0 truncate font-mono text-[11px] text-ink-3">
           {attempt.runId ?? run?.run_id ?? "No run yet"}
         </span>
+        {recoverable && onReset ? (
+          <button
+            type="button"
+            onClick={onReset}
+            title={run ? `Clear this attempt and keep showing ${run.run_id}` : "Clear this attempt"}
+            className="ml-auto shrink-0 rounded-[8px] px-2 py-1 text-[12px] font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
+          >
+            Reset
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onShowDetails}
-          className="ml-auto shrink-0 rounded-[8px] px-2 py-1 text-[12px] font-semibold text-accent hover:bg-accent-soft"
+          className={cx(
+            "shrink-0 rounded-[8px] px-2 py-1 text-[12px] font-semibold text-accent hover:bg-accent-soft",
+            !(recoverable && onReset) && "ml-auto",
+          )}
         >
           Run details
         </button>

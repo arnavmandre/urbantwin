@@ -224,6 +224,26 @@ def scenarios_fixture(run_id=None, *, source="recorded_fixture"):
                 "rainfall": 5,
                 "population": 30000,
             },
+            # Single-hazard presets: each makes the advisor pick a different
+            # supported intervention (drainage vs shade). Values only; no new model.
+            {
+                "id": "extreme_rainfall",
+                "label": "Extreme rainfall",
+                "description": "Cool, very wet day. Drives the rain and flood-risk proxy, not flood depth.",
+                "temperature": 18,
+                "humidity": 85,
+                "rainfall": 90,
+                "population": 60000,
+            },
+            {
+                "id": "heat_stress",
+                "label": "Heat stress",
+                "description": "Dry, very hot day. Drives the heat-stress heuristic.",
+                "temperature": 40,
+                "humidity": 55,
+                "rainfall": 0,
+                "population": 80000,
+            },
             {
                 "id": "extreme_heat_rain",
                 "label": "Extreme heat and rain",

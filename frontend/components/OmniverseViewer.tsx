@@ -317,6 +317,15 @@ export function OmniverseViewer({
             </label>
           </div>
           {topRight}
+          {/* Kit switches the Phase 8 demoState variant, which is the same for
+              every run; only the metrics come from this run. */}
+          {connected ? (
+            <p className="basis-full text-right">
+              <span className="inline-block rounded-[8px] bg-surface/90 px-2 py-0.5 text-[11px] text-ink-3">
+                3D Before/After is a packaged comparison scene; metrics are from this run.
+              </span>
+            </p>
+          ) : null}
         </div>
       </div>
 

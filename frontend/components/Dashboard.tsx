@@ -215,6 +215,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
               setResultsOpen(true);
               closeScenario();
             }}
+            onReset={runner.reset}
           />
         </ScenarioDrawer>
 
