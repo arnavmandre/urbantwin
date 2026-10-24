@@ -8,10 +8,11 @@ type Ctx = { params: Promise<{ runId: string }> };
 export async function POST(_request: Request, ctx: Ctx) {
   const { runId } = await ctx.params;
   if (!isMockMode()) {
-    return proxy(`/api/runs/${encodeURIComponent(runId)}/advise`, {
-      method: "POST",
-      body: "{}",
-    });
+    return proxy(
+      `/api/runs/${encodeURIComponent(runId)}/advise`,
+      { method: "POST", body: "{}" },
+      180_000, // the Agent 37 advisor may need to wake up
+    );
   }
   return json(
     {

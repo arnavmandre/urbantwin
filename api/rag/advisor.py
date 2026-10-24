@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from typing import Callable
 
+from api import agent37
 from api.explain import build_explanation_payload
 from api.rag.retrieval import KnowledgeRetriever
 
@@ -122,13 +123,15 @@ def advise_run(
     except Exception as exc:  # noqa: BLE001 - availability must never break demo
         return _deterministic_fallback(report, f"Knowledge retrieval failed: {exc}")
 
+    model_label = MODEL_NAME
     if llm_callable is None:
-        if not os.environ.get("GROQ_API_KEY", "").strip():
+        llm_callable, model_label = _default_llm()
+        if llm_callable is None:
             deterministic["retrieved_knowledge"] = retrieved
             deterministic["retrieval_backend"] = retriever.backend
-            deterministic["unavailable_reason"] = "GROQ_API_KEY is not configured."
+            deterministic["unavailable_reason"] = (
+                "No advisor LLM is configured (set AGENT37_API_KEY and AGENT37_AGENT_URL).")
             return deterministic
-        llm_callable = _groq_call
 
     request = {
         "simulator_evidence": payload,
@@ -142,7 +145,7 @@ def advise_run(
     }
     cache_key = hashlib.sha256(json.dumps({
         "request": request, "knowledge_hash": retriever.knowledge_hash,
-        "model": MODEL_NAME,
+        "model": model_label,
     }, sort_keys=True).encode()).hexdigest()
     if cache_key in _CACHE:
         return dict(_CACHE[cache_key])
@@ -157,7 +160,7 @@ def advise_run(
             validated = validate_advisor_response(candidate, retrieved, payload)
             result = {
                 "source": "rag_llm", "advisor_mode": "rag_llm",
-                "model": MODEL_NAME, "fallback_used": False,
+                "model": model_label, "fallback_used": False,
                 "retrieval_backend": retriever.backend,
                 "knowledge_hash": retriever.knowledge_hash,
                 "primary_problem": validated["primary_problem"],
@@ -291,6 +294,23 @@ def _normalize_candidate(value: object) -> object:
             rows.append(row)
         normalized["recommendations"] = rows
     return normalized
+
+
+def _default_llm() -> tuple[Callable[[dict], object] | None, str]:
+    """Agent 37 is the advisor LLM; Groq gpt-oss-120b remains only as a fallback when Agent 37 is unset."""
+    if agent37.configured():
+        return _agent37_call, agent37.MODEL_LABEL
+    if os.environ.get("GROQ_API_KEY", "").strip():
+        return _groq_call, MODEL_NAME
+    return None, ""
+
+
+def _agent37_call(payload: dict) -> object:
+    # Agent 37 has no response_format, so the schema goes in the prompt and validation stays strict.
+    prompt = (f"{SYSTEM_PROMPT}\nThe JSON object must match this JSON Schema:\n"
+              f"{json.dumps(ADVISOR_RESPONSE_SCHEMA)}\n\nRequest:\n{json.dumps(payload, ensure_ascii=False)}")
+    text, _ = agent37.send(prompt)  # fresh session per ranking: no history leaks between runs
+    return agent37.extract_json(text)
 
 
 def _groq_call(payload: dict) -> object:

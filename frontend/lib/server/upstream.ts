@@ -34,6 +34,8 @@ export function isMockMode(): boolean {
 export async function proxy(
   requestPath: string,
   init?: RequestInit,
+  /** The AI advisor can take minutes when its hosted agent is waking from sleep. */
+  timeoutMs = 30_000,
 ): Promise<Response> {
   const base = upstreamBase();
   if (!base) throw new Error("proxy() called with no URBANTWIN_API_BASE");
@@ -43,7 +45,7 @@ export async function proxy(
       ...init,
       cache: "no-store",
       headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const body = await upstream.text();
     return new Response(body, {

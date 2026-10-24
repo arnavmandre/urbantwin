@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { AdvisorChat } from "@/components/AdvisorChat";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { AdvisorImpactSummary } from "@/components/AdvisorImpactSummary";
 import { RunExplainPanel } from "@/components/RunExplainPanel";
@@ -339,6 +340,14 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
                 <ResultsSection title="Advisor and calculation details">
                   {health.mode === "live" && run.status === "complete" ? (
                     <>
+                      {/* not keyed by run: the conversation continues across Apply & re-run */}
+                      <AdvisorChat
+                        runId={run.run_id}
+                        busy={runner.active}
+                        onApply={(selectedRecommendationIds) =>
+                          submit({ forceApply: true, selectedRecommendationIds })
+                        }
+                      />
                       <RagAdvisorPanel
                         key={`rag-${run.run_id}`}
                         runId={run.run_id}

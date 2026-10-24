@@ -25,6 +25,7 @@ import type {
   ViewCommandResult,
   ExplainResponse,
   RagAdvisorResponse,
+  AdvisorChatResponse,
 } from "./types";
 
 export class ApiError extends Error {
@@ -119,5 +120,11 @@ export const api = {
     request<RagAdvisorResponse>(`/runs/${encodeURIComponent(runId)}/advise`, {
       method: "POST",
       body: "{}",
+    }),
+
+  chat: (runId: string, message: string, sessionId: string | null) =>
+    request<AdvisorChatResponse>(`/runs/${encodeURIComponent(runId)}/chat`, {
+      method: "POST",
+      body: JSON.stringify({ message, session_id: sessionId ?? undefined }),
     }),
 };

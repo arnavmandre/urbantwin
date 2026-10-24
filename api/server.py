@@ -16,6 +16,8 @@ from api.shapes import (
     live_scenarios,
     live_stream_config,
 )
+from api.chat import MAX_MESSAGE_CHARS
+from api.chat import chat as advisor_chat
 from api.explain import build_explanation_payload, explain_run
 from api.rag import advise_run
 from api.validation import validate_run_request, validate_view_command
@@ -136,6 +138,15 @@ def create_app(root, manager=None, *, host="127.0.0.1", port=0):
                     self._handle_advise(run_id)
                     return
 
+                chat_match = re.fullmatch(r"/api/runs/([^/]+)/chat", path)
+                if method == "POST" and chat_match:
+                    run_id = chat_match.group(1)
+                    if not _safe_run_id(run_id):
+                        self._error(404, "not_found", f"Run {run_id!r} was not found.")
+                        return
+                    self._handle_chat(run_id)
+                    return
+
                 self._error(404, "not_found", f"No route for {method} {path}.")
             except Exception as exc:  # noqa: BLE001 — last-resort JSON 500
                 self._error(500, "internal_error", str(exc))
@@ -246,6 +257,33 @@ def create_app(root, manager=None, *, host="127.0.0.1", port=0):
                 )
                 return
             self._json(200, {"run_id": run_id, **advise_run(report, root=root)})
+
+        def _handle_chat(self, run_id: str) -> None:
+            summary = manager.get_run(run_id)
+            if summary is None:
+                self._error(404, "not_found", f"Run {run_id!r} was not found.")
+                return
+            report = manager.get_report(run_id)
+            if report is None:
+                self._error(409, "conflict",
+                            "Run has no simulator report yet; chat is available after the run completes.")
+                return
+            body, err = self._read_json_object()
+            if err is not None:
+                status, payload = err
+                self._json(status, payload)
+                return
+            message, session_id = body.get("message"), body.get("session_id")
+            if not isinstance(message, str) or not message.strip() or len(message) > MAX_MESSAGE_CHARS:
+                self._error(422, "validation_failed",
+                            f"message must be a non-empty string of at most {MAX_MESSAGE_CHARS} characters.")
+                return
+            if session_id is not None and not isinstance(session_id, str):
+                self._error(422, "validation_failed", "session_id must be a string when given.")
+                return
+            city = (summary.get("city") or {}).get("key")
+            self._json(200, {"run_id": run_id, **advisor_chat(report, run_id, message.strip(), session_id,
+                                                              city=city)})
 
         def _handle_view(self, run_id: str) -> None:
             # "viewport" is a reserved id for camera/overlay commands before any

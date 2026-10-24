@@ -43,8 +43,11 @@ Real city (OpenStreetMap)  ->  Scenario  ->  Synthetic citizens  ->  Simulation
 - **Visible consequences.** Each citizen's chosen route and behaviour is animated in a live Omniverse stream
   inside a web dashboard.
 - **Actionable advice.** A deterministic advisor names the problem places and recommends interventions the
-  simulator can actually execute (more shade, better drainage, alternative routes). An optional LLM layer
-  ranks and explains them.
+  simulator can actually execute (more shade, better drainage, alternative routes).
+- **An AI advisor you can talk to.** Planners chat with an LLM advisor (an Agent 37 hosted agent) about the
+  run: ask why a zone is flagged, challenge a recommendation, or suggest an idea. It answers from the run's
+  real numbers, turns testable ideas into "Apply & re-run" proposals, says plainly when an idea cannot be
+  simulated, and compares runs afterwards.
 - **Before vs after.** The same citizens are re-simulated under the applied intervention, so the planner sees
   the change in comfort, stress and behaviour on the same streets.
 
@@ -55,7 +58,7 @@ Real city (OpenStreetMap)  ->  Scenario  ->  Synthetic citizens  ->  Simulation
 | City model | OSM footprints and streets -> heights, materials, trees -> OpenUSD stage | Python, Blender (headless), OpenUSD (`pxr`) |
 | Synthetic citizens | Behaviour parameters sampled from a Gaussian copula fitted to the survey | Python, NumPy |
 | Simulator | Per-citizen route choice over real walking paths, responding to heat, rain, crowding, shade and transit; emergent corridor congestion (damped iterative assignment); human-experience metrics | Pure Python, deterministic, ~80 built-in asserts |
-| Advisor | Threshold rules find problem zones, buildings and routes and propose executable interventions; optional RAG + LLM ranks them | Python; optional Groq-hosted `gpt-oss-120b` |
+| Advisor | Threshold rules find problem zones, buildings and routes and propose executable interventions; an LLM ranks them and chats with the planner, grounded in the run's numbers | Python; Agent 37 hosted Hermes agent (Groq `gpt-oss-120b` fallback) |
 | Visualisation | Citizens as animated low-poly people coloured by behaviour; illustrative traffic; Before/After switch | NVIDIA Omniverse Kit, RTX, OpenUSD |
 | Dashboard | Scenario controls, city switch, live viewport, metrics, citizen inspector, advisor panels | Next.js, WebRTC (`@nvidia/ov-web-rtc`) |
 | Backend | Runs the full pipeline per scenario on a local HTTP API | Python standard-library server |
@@ -81,7 +84,7 @@ Real city (OpenStreetMap)  ->  Scenario  ->  Synthetic citizens  ->  Simulation
 Pune shows the approach transfers: a dense, historic South Asian street grid built from raw OSM data, with
 one-way streets respected, traffic on the left and auto-rickshaws in the illustrative traffic.
 
-## 5. Demo script (about 3 minutes)
+## 5. Demo script (about 4 minutes)
 
 1. **Open the dashboard.** The live Omniverse viewport shows Pune around Shaniwar Wada. Walkers are on the
    pavements and traffic is moving, all in real time.
@@ -90,11 +93,14 @@ one-way streets respected, traffic on the left and auto-rickshaws in the illustr
 3. **Read the impact.** In about 10 seconds the stream updates with that run's citizens, and the headline
    metrics and pressure points fill in. In one such Pune run, HEI went from **57.4 to 68.5** after the
    advisor applied +25 % shade and +35 % drainage. That is a single heuristic run, not a forecast.
-4. **Toggle Before / After.** Many walkers change from yellow (seeking shade) and red (stressed) to green
+4. **Ask the advisor.** In the chat, ask "What should we test next, and why?". In testing it pointed out
+   that shade and drainage had been applied together, proposed testing each alone, and after "Apply &
+   re-run" on shade compared both runs with the simulator's exact numbers.
+5. **Toggle Before / After.** Many walkers change from yellow (seeking shade) and red (stressed) to green
    (continuing comfortably). These are the same citizens, re-simulated.
-5. **Jump the camera to the Problem Zone** the run flagged, then open a citizen in the inspector to see their
+6. **Jump the camera to the Problem Zone** the run flagged, then open a citizen in the inspector to see their
    route, exposure and behaviour.
-6. **Switch city to London** to show the same pipeline on a second city. Optionally open the Grafana history
+7. **Switch city to London** to show the same pipeline on a second city. Optionally open the Grafana history
    of every run.
 
 ## 6. Why it's different

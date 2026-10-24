@@ -7,14 +7,14 @@ import { Pill } from "@/components/ui/Pill";
 import { api } from "@/lib/api";
 import type { RagAdvisorResponse, RecommendationId } from "@/lib/types";
 
-const LABELS: Record<string, string> = {
+export const ACTION_LABELS: Record<string, string> = {
   increase_shade: "Increase shade",
   improve_drainage: "Improve drainage",
   alternative_pedestrian_routes: "Open alternative pedestrian routes",
   no_major_intervention: "No major intervention",
 };
 
-/** On-demand to avoid spending Groq credits until the operator asks for advice. */
+/** On-demand to avoid spending advisor-model credits until the operator asks for advice. */
 export function RagAdvisorPanel({
   runId,
   busy,
@@ -55,7 +55,7 @@ export function RagAdvisorPanel({
       <CardHeader
         eyebrow="AI decision support"
         title="Urban advisor"
-        description="Groq uses retrieved planning evidence to explain the risks and propose actions. Select one or several actions to test in a new simulation."
+        description="The AI advisor uses retrieved planning evidence to explain the risks and propose actions. Select one or several actions to test in a new simulation."
         actions={result ? (
           <Pill tone={result.fallback_used ? "caution" : "accent"}>
             {result.fallback_used ? "Deterministic fallback" : "RAG grounded"}
@@ -92,7 +92,7 @@ export function RagAdvisorPanel({
                     }
                     className="size-4 accent-[var(--accent)]"
                   />
-                  <span>{recommendation.rank}. {recommendation.intervention ?? LABELS[recommendation.argus_recommendation_id]}</span>
+                  <span>{recommendation.rank}. {recommendation.intervention ?? ACTION_LABELS[recommendation.argus_recommendation_id]}</span>
                 </label>
                 {recommendation.knowledge_id ? <Pill tone="neutral">{recommendation.knowledge_id}</Pill> : null}
               </div>
@@ -112,7 +112,7 @@ export function RagAdvisorPanel({
           <p className="text-[11px] leading-relaxed text-ink-3">
             {result.fallback_used
               ? `No LLM output was used: ${result.unavailable_reason ?? "the deterministic fallback answered."}`
-              : `Confirmed LLM output from ${result.model ?? "the configured Groq model"}. Retrieval: ${result.retrieval_backend ?? "unknown"}.`}
+              : `Confirmed LLM output from ${result.model ?? "the configured advisor model"}. Retrieval: ${result.retrieval_backend ?? "unknown"}.`}
           </p>
           <button
             type="button"

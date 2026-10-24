@@ -439,6 +439,18 @@ export interface RagAdvisorResponse {
   retrieved_knowledge: RetrievedKnowledge[];
 }
 
+/** POST /api/runs/{id}/chat. Proposals are already validated against the executable actions. */
+export interface AdvisorChatResponse {
+  run_id: string;
+  source: "agent37" | "deterministic";
+  model?: string;
+  reply: string;
+  proposals: { action: RecommendationId; reason: string }[];
+  /** Continue the conversation with this; null on the deterministic fallback. */
+  session_id: string | null;
+  unavailable_reason?: string;
+}
+
 // --------------------------------------------------------------------------
 // Errors
 // --------------------------------------------------------------------------

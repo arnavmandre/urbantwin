@@ -113,6 +113,13 @@ Only claim what the code does when executed. Verified as of this writing:
   simulator payload. Default is a deterministic template (no LLM key required);
   `URBANTWIN_LLM_URL` enables an optional paraphrase with fallback. Not medical
   advice; the threshold advisor remains authoritative for recommendations.
+- ✅ Advisor LLM = an Agent 37 hosted Hermes agent (`api/agent37.py`; `.env`:
+  `AGENT37_API_KEY`, `AGENT37_AGENT_URL`), replacing Groq `gpt-oss-120b` (kept
+  only as a fallback). `POST /api/runs/{id}/chat` (`api/chat.py`) is a grounded
+  multi-turn chat whose proposals are validated against the four executable
+  actions and applied via the normal re-run path; verified live, including a
+  cross-run comparison that matched the simulator's numbers. The LLM never
+  produces metrics; on failure it falls back to the rule-based advice, labelled.
 - ✅ Phase 14: `@nvidia/ov-web-rtc@6.7.0` DIRECT WebRTC when `GET
   /api/stream/config` is `available` (Kit signaling port probe). Mock mode
   (`URBANTWIN_API_BASE` unset) never streams.
