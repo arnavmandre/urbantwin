@@ -66,6 +66,8 @@ $body = @{
 $created = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/runs `
   -ContentType 'application/json' -Body $body
 # 202 { run_id, status: "queued" }
+# Optional: city = "pune" runs cities/pune/run_pune.py instead (default "london").
+# Prepare Pune once first; see docs/PUNE_CITY.md.
 
 do {
   Start-Sleep -Seconds 3

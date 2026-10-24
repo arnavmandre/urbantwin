@@ -31,6 +31,7 @@ context loss.
 | `frontend/` | web | Next.js dashboard. Default = recorded fixtures (`mode: "mock"`). Set `URBANTWIN_API_BASE` to proxy Phase 12. See `frontend/README.md`. |
 | `phase9/` | realism + demo | Materials, heights, trees, lighting, cameras, overlays — all `over` layers — plus `build_city_from_osm.py`. **Open `phase9/scene/main.usda` for the demo.** |
 | `phase10/` | survey | Real survey -> calibrated synthetic citizens. `data/` holds the four-table dataset. |
+| `cities/pune/` | second city | Central Pune 1 km: OSM -> Blender build (spec-validated `city_base.usda`), simulator bridge, 400 m Kit view, per-run `run_pune.py`. Generated layers are gitignored. City registry: `integration/cities.py`. See `docs/PUNE_CITY.md`. |
 | `analytics/` | run history | Phase 18: Postgres + Grafana (Docker) and `import_runs.py`, which copies `data/runs/` + `data/run_events.jsonl` into the DB. See `docs/PHASE18_GRAFANA_ANALYTICS.md`. |
 | `docs/` | contracts | `INTEGRATION_CONTRACT.md` is authoritative. |
 
@@ -66,7 +67,9 @@ it, commands are dropped. Read `docs/CLAUDE_HANDOFF_STREAMING.md` "Resolution".
    `weight`). Unknown keys are ignored silently, so a typo = a dropped field.
 4. **Visualisation reads canonical v1 snapshots**, not
    `Simulation/urbantwin_demo_output.json`. The exporter owns normalisation
-   (0–100 → 0–1) and route→edge mapping.
+   (0–100 → 0–1) and route→edge mapping. **Documented exception: Pune**
+   (`cities/pune/`) animates straight from the report, because the snapshot
+   contract is bound to London's frozen `city_id` and edge registry.
 5. **Metrics are heuristic prototypes**, not medical/meteorological models. Keep
    the disclaimers in output and docs.
 
@@ -127,6 +130,15 @@ Only claim what the code does when executed. Verified as of this writing:
   Baseline vs intervention = before/after arms of one run. Failed/cancelled
   counts cover only runs logged since `data/run_events.jsonl` existed. Grafana
   visualises output; it validates nothing.
+- ✅ Pune (`cities/pune/`, `docs/PUNE_CITY.md`): `POST /api/runs` with
+  `"city": "pune"` runs the unmodified simulator on 107 OSM buildings / 3,011 real
+  routes, animates both arms (~7 s per run) and publishes into the 400 m view;
+  dashboard city switch; `demo_launch.ps1 -City pune` streams it. Before/After =
+  the simulator's own before/after arms via the same `demoState` variant names.
+  ⚠️ Only 40 of 2,069 Pune heights are OSM-tagged; vehicles are illustrative;
+  citizens are survey-calibrated, not Pune residents; facades are appearance.
+  Live streaming of Pune was not exercised end to end (stage + handler targets
+  were checked with pxr; the 400 m view was opened in desktop Kit).
 - ✅ `integration/export_snapshot.py` closes the loop: simulator report ->
   canonical v1 snapshot -> USD. 12/12 integration tests pass, agents land within
   1mm of their route geometry, snapshots are `data_kind: simulation`.
@@ -167,6 +179,12 @@ python -m api --host 127.0.0.1 --port 8000
 $env:URBANTWIN_API_BASE = "http://127.0.0.1:8000"
 cd frontend; npm run dev
 # operator notes: docs/PHASE12_LOCAL_API.md
+
+# Pune (second city) - prepare once, then runs come from the dashboard or:
+cd cities\pune; python pune_sim.py; python pune_view.py
+python cities\pune\run_pune.py --run-id pune1 --temperature 38 --humidity 60 --rainfall 0 --population 50000
+python -m unittest cities/pune/test_run_pune.py
+.\tools\demo_launch.ps1 -City pune -Force      # stream Pune instead of London
 
 # Phase 18 Grafana run analytics (demo_launch.ps1 does this when Docker runs)
 docker compose -f analytics\docker-compose.yml up -d
