@@ -3,11 +3,13 @@
 #   .\tools\demo_launch.ps1
 #   .\tools\demo_launch.ps1 -Force          # free ports 8000/3000/49100 first
 #   .\tools\demo_launch.ps1 -NoAnalytics    # skip Grafana + run importer
+#   .\tools\demo_launch.ps1 -Inspector      # also open a desktop Kit editor on the stage
 #   .\Start-Argus.bat                       # double-click from Explorer
 param(
     [switch]$Force,
     [switch]$NoBrowser,
-    [switch]$NoAnalytics
+    [switch]$NoAnalytics,
+    [switch]$Inspector
 )
 
 $ErrorActionPreference = "Stop"
@@ -168,6 +170,7 @@ $FrontendLog = Join-Path $LogDir ("frontend-{0}.log" -f $Stamp)
 $KitLog = Join-Path $LogDir ("kit-{0}.log" -f $Stamp)
 $KitBat = "C:\Users\arnav\omniverse\kit-app-template\launch_urbantwin_streaming.bat"
 $KitRoot = "C:\Users\arnav\omniverse\kit-app-template"
+$InspectorBat = Join-Path $KitRoot "launch_urbantwin_inspector.bat"
 
 $ApiScript = Join-Path $LogDir ("start-api-{0}.ps1" -f $Stamp)
 $FrontendScript = Join-Path $LogDir ("start-frontend-{0}.ps1" -f $Stamp)
@@ -240,6 +243,22 @@ if ($kitStarted) {
     Write-Host "Started Kit streaming in a visible console (headless render)."
 } else {
     Write-Warning ("Kit launcher not found at {0} - start Kit manually for stream online." -f $KitBat)
+}
+
+# Inspector: an ordinary Kit editor window on the same stage, separate from the
+# stream. -Force never stops it (it may hold unsaved work), so do not open a
+# second one if it is already running.
+if ($Inspector) {
+    $inspectorRunning = Get-CimInstance Win32_Process -Filter "Name='kit.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { [string]$_.CommandLine -like "*urbantwin.kit*" }
+    if ($inspectorRunning) {
+        Write-Host "Inspector Kit already running - leaving it open."
+    } elseif (Test-Path -LiteralPath $InspectorBat) {
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$InspectorBat`"" -WorkingDirectory $KitRoot | Out-Null
+        Write-Host "Started: Inspector Kit (desktop editor window; shares the GPU with the stream)"
+    } else {
+        Write-Warning ("Inspector launcher not found at {0}." -f $InspectorBat)
+    }
 }
 
 # Analytics (optional): PostgreSQL + Grafana in Docker, plus an importer that

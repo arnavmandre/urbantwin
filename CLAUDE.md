@@ -182,6 +182,9 @@ python -m unittest analytics.test_import_runs
 # Phase 17 judge demo (branch phase13-streaming-kit; phases 11–17 on this branch)
 cd C:\Users\arnav\Argus\.worktrees\phase13-streaming-kit
 .\tools\demo_launch.ps1          # API + Kit + frontend; logs in tools/demo_logs/
+.\tools\demo_launch.ps1 -Inspector   # + a desktop Kit editor on the same stage (Kit repo:
+                                     #   launch_urbantwin_inspector.bat); both Kits auto-reload
+                                     #   layers a run rewrites (no "fetch changes" toast)
 python tools\demo_smoke.py       # health, stream config, short run, view allow-list
 # operator runbook: docs/DEMO_RUNBOOK.md
 # LLM explain is optional (URBANTWIN_LLM_URL); relaunch Kit if view_commands miss Kit
