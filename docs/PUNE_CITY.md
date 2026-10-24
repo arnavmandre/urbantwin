@@ -55,7 +55,11 @@ follows rule 4 exactly.
   base crowding by road class. Route shade = share of the route within 10 m of a real OSM tree.
 - Citizens: calibrated on the 41-person Argus survey, not Pune residents; homes/destinations are the
   `phase10/assign_homes.py` heuristic.
-- Animation: each walker ping-pongs along its simulator-chosen route at its own speed, 3× real time.
-  Not a time-evolving simulation.
+- Animation: each walker ping-pongs along its simulator-chosen route at its own survey speed, in real
+  time, on the pavement beside the carriageway (corners rounded). 120 s loop, sampled 6×/s and
+  interpolated by USD. No collision avoidance: walkers can brush past each other. Not a time-evolving
+  simulation.
+- Vehicles share one speed per road and are evenly spaced, so they never overlap on a road; vehicles on
+  crossing roads can still meet at junctions (there is no traffic model).
 - Vehicles: illustrative only (one per 70 m of road, ~20 km/h, ~30 % auto-rickshaws, driving on the left).
 - Facade windows, wall tints, roofs and the people/vehicle models are appearance, not data.

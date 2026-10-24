@@ -357,10 +357,10 @@ def write_run_layer(agents_dir, report, out_path):
 
     def mask(positions_attr, inv_attr, margin):
         lim, seen = HALF - margin, []
-        for f in range(pune_sim.FRAMES):
-            p = np.array(positions_attr.Get(f))
+        for code in pune_sim.TIMECODES:  # invisibleIds hold between samples; margins cover one sample of motion
+            p = np.array(positions_attr.Get(code))
             out = np.nonzero((np.abs(p[:, 0]) > lim) | (np.abs(p[:, 1]) > lim))[0]
-            inv_attr.Set(Vt.Int64Array(out.tolist()), f)
+            inv_attr.Set(Vt.Int64Array(out.tolist()), code)
             seen.append(len(p) - len(out))
         return {"total": len(p), "visible_per_frame_mean": round(float(np.mean(seen)), 1)}
 

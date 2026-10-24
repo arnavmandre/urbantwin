@@ -15,8 +15,8 @@ Honesty notes (also written to manifest.json["simulation"]):
 - Home/destination is assign_homes.py's trip heuristic, not survey data.
 - Route shade = share of the route within 10 m of a real OSM tree; base crowding by road class,
   drainage and flood exposure are fixed heuristics (no Pune data).
-- Walkers move along their simulator-chosen route at their own speed, ping-ponging, at TIME_SCALE x
-  real time. Behaviour colour is one equilibrium, not a time-evolving simulation.
+- Walkers move along their simulator-chosen route at their own speed in real time, on the pavement,
+  ping-ponging. Behaviour colour is one equilibrium, not a time-evolving simulation.
 - Cars are ILLUSTRATIVE: no traffic data exists; density and speed are fixed assumptions.
 """
 import heapq
@@ -40,8 +40,11 @@ EARTH_R = 6378137.0
 BBOX = dict(south=18.5150, north=18.5240, west=73.8506, east=73.8600)
 
 FPS = 24
-FRAMES = 720           # 30 s of playback
-TIME_SCALE = 3.0       # 30 s playback = 90 s of real movement
+TIME_SCALE = 1.0       # real time: walkers at their survey speeds, vehicles at CAR_SPEED_KMH
+DURATION_S = 120       # loop length; at real speed a short loop would barely move anyone
+SAMPLE_HZ = 6          # positions stored 6x a second; USD interpolates the frames between
+TIMECODES = [k * FPS // SAMPLE_HZ for k in range(DURATION_S * SAMPLE_HZ)]
+FRAMES = len(TIMECODES)  # number of time samples (kept for callers that iterate samples)
 HOMES = 90
 CITIZENS = 600
 CAR_SPACING_M = 70.0   # illustrative density: one car per 70 m of carriageway
@@ -51,6 +54,11 @@ ROAD_CROWD = {"primary": 0.6, "trunk": 0.6, "trunk_link": 0.6, "secondary": 0.5,
               "tertiary": 0.4, "residential": 0.3, "living_street": 0.3, "service": 0.25,
               "footway": 0.2, "path": 0.2, "pedestrian": 0.35, "steps": 0.2, "corridor": 0.2}
 CAR_ROADS = {"primary", "trunk", "trunk_link", "secondary", "secondary_link", "tertiary", "residential"}
+# ribbon widths in metres; must match build_script.ROAD_WIDTHS (+ EXTENDED_WIDTHS) so walkers clear the carriageway
+ROAD_WIDTH = {"primary": 10.0, "trunk": 10.0, "trunk_link": 10.0, "secondary": 8.0, "secondary_link": 8.0,
+              "tertiary": 6.0, "residential": 6.0, "living_street": 6.0, "service": 4.0,
+              "footway": 2.0, "path": 2.0, "pedestrian": 2.0, "steps": 2.0, "corridor": 2.0}
+FOOTWAY_TYPES = {"footway", "path", "pedestrian", "steps", "corridor"}
 SIM_TYPE = {"education": "school", "healthcare": "hospital", "retail": "market", "commercial": "market",
             "office": "office", "civic": "office", "hotel": "office", "religious": "religious",
             "heritage": "heritage"}
@@ -180,6 +188,53 @@ def pingpong(s, L):
     return (s, 1.0) if s <= L else (2 * L - s, -1.0)
 
 
+def dedupe(poly, eps=0.05):
+    out = [poly[0]]
+    for p in poly[1:]:
+        if math.dist(p, out[-1]) > eps:
+            out.append(p)
+    return out
+
+
+def chaikin(poly, iterations=2):
+    """Corner-cutting: rounds sharp polyline corners so headings turn gradually, keeps the end points."""
+    for _ in range(iterations):
+        if len(poly) < 3:
+            return poly
+        out = [poly[0]]
+        for (ax, ay), (bx, by) in zip(poly, poly[1:]):
+            out += [(0.75 * ax + 0.25 * bx, 0.75 * ay + 0.25 * by), (0.25 * ax + 0.75 * bx, 0.25 * ay + 0.75 * by)]
+        out.append(poly[-1])
+        poly = out
+    return poly
+
+
+def offset_path(poly, offsets):
+    """Parallel path at a per-vertex signed offset (+ = left of travel). Mitred at corners, capped at 2x."""
+    n = len(poly)
+    dirs = []
+    for (ax, ay), (bx, by) in zip(poly, poly[1:]):
+        d = math.hypot(bx - ax, by - ay) or 1.0
+        dirs.append(((bx - ax) / d, (by - ay) / d))
+    out = []
+    for i, (x, y) in enumerate(poly):
+        d0, d1 = dirs[max(0, i - 1)], dirs[min(i, n - 2)]
+        tx, ty = d0[0] + d1[0], d0[1] + d1[1]
+        tl = math.hypot(tx, ty)
+        tx, ty = (tx / tl, ty / tl) if tl > 1e-6 else d1
+        nx, ny = -ty, tx
+        miter = min(2.0, 1.0 / max(0.5, nx * -d1[1] + ny * d1[0]))
+        out.append((x + nx * offsets[i] * miter, y + ny * offsets[i] * miter))
+    return out
+
+
+def track(poly):
+    """Smoothed path ready for animation: (points, cumulative lengths, total length)."""
+    poly = chaikin(dedupe(poly))
+    cum = np.concatenate([[0.0], np.cumsum([math.dist(a, b) for a, b in zip(poly, poly[1:])])])
+    return poly, cum, float(cum[-1])
+
+
 # ---------- city + citizens + simulator ----------
 
 def read_buildings():
@@ -246,7 +301,7 @@ def build_city(nodes, ways):
         sim_buildings.append({"id": b["name"], "name": b["label"], "type": "residential", "zone": zone_of(b["xy"]),
                               "capacity": 0, "cooling": 0.3, "flood_exposure": 0.3})
 
-    routes, polylines = [], {}
+    routes, polylines, segment_hw = [], {}, {}
 
     def add_route(start, end, node_path):
         poly = [start["xy"]] + [gxy[n] for n in node_path] + [end["xy"]]
@@ -270,6 +325,7 @@ def build_city(nodes, ways):
                        "via_zones": sorted({zone_of(tuple(s)) for s in samples})})
         # animate street-to-street only: building centroids are inside walls (distance above still counts the door walk)
         polylines[rid] = [gxy[n] for n in node_path]
+        segment_hw[rid] = [edge_hw[frozenset((a, b))] for a, b in zip(node_path, node_path[1:])]
 
     for dst in dests:
         prev = dijkstra(adj, dst["node"])
@@ -291,7 +347,7 @@ def build_city(nodes, ways):
                         "flood exposure, capacity, cooling and base crowding are fixed heuristics. Do not hand-edit."),
         "zones": zones, "buildings": sim_buildings, "routes": routes,
     }
-    return city, polylines, len(gxy)
+    return city, polylines, segment_hw, len(gxy)
 
 
 def run(cmd, cwd=HERE):
@@ -306,7 +362,7 @@ def run(cmd, cwd=HERE):
 
 def set_time(stage):
     stage.SetStartTimeCode(0)
-    stage.SetEndTimeCode(FRAMES - 1)
+    stage.SetEndTimeCode(TIMECODES[-1])
     stage.SetTimeCodesPerSecond(FPS)
     stage.SetFramesPerSecond(FPS)
 
@@ -435,35 +491,105 @@ def write_agents(citizens, routes, speeds, style, out_path):
     inst.CreatePrototypesRel().SetTargets(
         [person_proto(stage, f"/World/Agents/Walkers/Prototypes/{n}", style[n], mats) for n in names])
 
-    rng = random.Random(11)  # same seed per arm: a citizen keeps its offset when Before/After is toggled
+    rng = random.Random(11)  # same seed per arm: a citizen keeps its timing when Before/After is toggled
+    ordered = sorted(speeds.values())
     walkers = []
     for c in citizens:
-        poly = routes["polylines"][c["route"]]
+        poly, hws = routes["polylines"][c["route"]], routes["hw"][c["route"]]
         if c["home"] != routes["start"][c["route"]]:
-            poly = poly[::-1]
-        cum = np.concatenate([[0.0], np.cumsum([math.dist(a, b) for a, b in zip(poly, poly[1:])])])
-        walkers.append({"poly": poly, "cum": cum, "L": float(cum[-1]), "v": speeds[c["id"]] / 3.6 * TIME_SCALE,
-                        "s0": rng.uniform(0, float(cum[-1])), "lat": rng.uniform(-1.2, 1.2),
-                        "proto": names.index(c["behavior"])})
+            poly, hws = poly[::-1], hws[::-1]
+        # Keep left (India): each direction of travel uses the pavement on its own left, so oncoming walkers are
+        # on opposite pavements. Distance from the kerb grows with speed, so faster walkers overtake on a
+        # different line instead of passing through slower ones.
+        rank = ordered.index(speeds[c["id"]]) / max(1, len(ordered) - 1)
+        kerb = [(ROAD_WIDTH[h] / 2 + 0.5 + 1.1 * rank) if h not in FOOTWAY_TYPES else (0.1 + 0.8 * rank) for h in hws]
+
+        def side_path(points, kerbs):
+            offs = [max(kerbs[max(0, i - 1)], kerbs[min(i, len(kerbs) - 1)]) for i in range(len(points))]
+            return chaikin(dedupe(offset_path(points, offs)))
+        # One closed loop: out on the left pavement, cross the street at the destination, back on the other
+        # pavement, cross again at home. Continuous motion, no jump between pavements.
+        loop = side_path(poly, kerb) + side_path(poly[::-1], kerb[::-1])
+        loop.append(loop[0])
+        cum = np.concatenate([[0.0], np.cumsum([math.dist(a, b) for a, b in zip(loop, loop[1:])])])
+        walkers.append({"poly": loop, "cum": cum, "L": float(cum[-1]), "v": speeds[c["id"]] / 3.6 * TIME_SCALE,
+                        "s0": rng.uniform(0, float(cum[-1])), "proto": names.index(c["behavior"])})
     inst.CreateProtoIndicesAttr([w["proto"] for w in walkers])
     inst.CreateIdsAttr(list(range(len(walkers))))
     pos_attr, ori_attr = inst.CreatePositionsAttr(), inst.CreateOrientationsAttr()
-    for f in range(FRAMES):
-        t = f / FPS
+    for k, code in enumerate(TIMECODES):
+        t = k / SAMPLE_HZ
         pts, oris = [], []
         for w in walkers:
-            s, direction = pingpong(w["s0"] + w["v"] * t, w["L"])
-            (x, y), (tx, ty) = point_at(w["poly"], w["cum"], s)
-            x, y = x - ty * w["lat"], y + tx * w["lat"]
+            (x, y), (tx, ty) = point_at(w["poly"], w["cum"], (w["s0"] + w["v"] * t) % w["L"])
             pts.append(Gf.Vec3f(x, y, 0.0))
-            oris.append(yaw_quat(tx * direction, ty * direction))
-        pos_attr.Set(Vt.Vec3fArray(pts), f)
-        ori_attr.Set(Vt.QuathArray(oris), f)
+            oris.append(yaw_quat(tx, ty))
+        pos_attr.Set(Vt.Vec3fArray(pts), code)
+        ori_attr.Set(Vt.QuathArray(oris), code)
     inst.GetPrim().CreateAttribute("urbantwin:note", Sdf.ValueTypeNames.String, custom=True).Set(
         "One low-poly pedestrian per simulated citizen on its simulator-chosen route at its survey-calibrated "
-        f"speed, {TIME_SCALE:g}x real time, ping-pong. Shirt colour = behaviour (one equilibrium).")
+        "speed, in real time, on the pavement beside the carriageway, ping-pong. Shirt colour = behaviour "
+        "(one equilibrium). No collision avoidance: walkers can brush past each other.")
     stage.GetRootLayer().Save()
     return len(walkers)
+
+
+def chain_streets(nodes, ways):
+    """In-box carriageway runs as node-ref lists, with OSM way pieces of one street joined end to end.
+
+    OSM splits a street into many short ways; driving each piece separately makes vehicles turn round at
+    every split and meet head-on there. Pieces are joined where exactly two of them meet at a node that is
+    not a junction (degree 2 in the carriageway graph) and they share a road class.
+    """
+    runs = []
+    for _, refs, tags in ways:
+        if tags["highway"] not in CAR_ROADS:
+            continue
+        oneway = tags.get("oneway") in ("yes", "true", "1", "-1")
+        if tags.get("oneway") == "-1":
+            refs = refs[::-1]  # store one-way streets in their legal direction of travel
+        run = []
+        for r in refs + [None]:
+            if r is not None and r in nodes and in_bbox(*nodes[r][:2]):
+                run.append(r)
+                continue
+            if len(run) >= 2:
+                runs.append([(tags["highway"], oneway), run])
+            run = []
+    neighbours = {}
+    for _, run in runs:
+        for a, b in zip(run, run[1:]):
+            neighbours.setdefault(a, set()).add(b)
+            neighbours.setdefault(b, set()).add(a)
+    merged = True
+    while merged:
+        merged = False
+        ends = {}
+        for i, (_, run) in enumerate(runs):
+            for node in (run[0], run[-1]):
+                ends.setdefault(node, []).append(i)
+        for node, idx in ends.items():
+            if len(idx) != 2 or idx[0] == idx[1] or len(neighbours[node]) != 2:
+                continue
+            (kind_a, a), (kind_b, b) = runs[idx[0]], runs[idx[1]]
+            if kind_a != kind_b:
+                continue
+            if kind_a[1]:  # one-way: only join head-to-tail, never reverse a legal direction
+                if a[-1] == node and b[0] == node:
+                    joined = a + b[1:]
+                elif b[-1] == node and a[0] == node:
+                    joined = b + a[1:]
+                else:
+                    continue
+            else:
+                a = a if a[-1] == node else a[::-1]
+                b = b if b[0] == node else b[::-1]
+                joined = a + b[1:]
+            runs[idx[0]] = [kind_a, joined]
+            del runs[idx[1]]
+            merged = True
+            break
+    return [(hw, oneway, run) for (hw, oneway), run in runs]
 
 
 def write_traffic(nodes, ways):
@@ -478,42 +604,51 @@ def write_traffic(nodes, ways):
 
     rng = random.Random(23)
     cars = []
-    for wid, refs, tags in ways:
-        if tags["highway"] not in CAR_ROADS:
+    for hw, oneway, refs in chain_streets(nodes, ways):
+        run_ = dedupe([project(nodes[r][1], nodes[r][0]) for r in refs])
+        if len(run_) < 2:
             continue
-        run_ = []
-        for r in refs + [None]:
-            if r is not None and r in nodes and in_bbox(*nodes[r][:2]):
-                run_.append(project(nodes[r][1], nodes[r][0]))
-                continue
-            if len(run_) >= 2:
-                cum = np.concatenate([[0.0], np.cumsum([math.dist(a, b) for a, b in zip(run_, run_[1:])])])
-                L = float(cum[-1])
-                for _ in range(int(L // CAR_SPACING_M)):
-                    cars.append({"poly": run_, "cum": cum, "L": L, "s0": rng.uniform(0, 2 * L),
-                                 "v": CAR_SPEED_KMH / 3.6 * TIME_SCALE * rng.uniform(0.8, 1.2)})
-            run_ = []
+        L = poly_length(run_)
+        n = int(L // CAR_SPACING_M)
+        v, phase = CAR_SPEED_KMH / 3.6 * TIME_SCALE * rng.uniform(0.85, 1.15), rng.uniform(0, 2 * L)
+        if oneway:
+            # one carriageway of a divided road: a single stream in the legal direction, entering upstream
+            lanes = (track(run_),)
+            for i in range(n):
+                cars.append({"lanes": lanes, "L": L, "s0": phase + i * L / n, "v": v})
+            continue
+        lane = ROAD_WIDTH[hw] / 4  # centre of the left-hand lane
+        lanes = (track(offset_path(run_, [lane] * len(run_))),
+                 track(offset_path(run_[::-1], [lane] * len(run_))))
+        # one speed per street and even spacing on the round trip, so vehicles never run through each other
+        for i in range(n):
+            cars.append({"lanes": lanes, "L": L, "s0": phase + i * 2 * L / n, "v": v})
     # illustrative mix: ~30% auto-rickshaws, rest cars in common paint colours
     inst.CreateProtoIndicesAttr([auto_index if rng.random() < AUTO_SHARE else rng.randrange(len(CAR_COLORS))
                                  for _ in cars])
     inst.CreateIdsAttr(list(range(len(cars))))
     pos_attr, ori_attr = inst.CreatePositionsAttr(), inst.CreateOrientationsAttr()
-    for f in range(FRAMES):
-        t = f / FPS
+    for k, code in enumerate(TIMECODES):
+        t = k / SAMPLE_HZ
         pts, oris = [], []
         for c in cars:
-            s, direction = pingpong(c["s0"] + c["v"] * t, c["L"])
-            (x, y), (tx, ty) = point_at(c["poly"], c["cum"], s)
-            tx, ty = tx * direction, ty * direction
-            x, y = x - ty * 1.8, y + tx * 1.8  # left of travel direction: India drives on the left
+            if len(c["lanes"]) == 1:  # one-way: loop downstream, re-entering at the upstream end
+                u = (c["s0"] + c["v"] * t) % c["L"]
+                path, cum, length = c["lanes"][0]
+            else:
+                u = (c["s0"] + c["v"] * t) % (2 * c["L"])
+                # out on the left lane, back on the other side's left lane (India drives on the left)
+                path, cum, length = c["lanes"][0] if u < c["L"] else c["lanes"][1]
+            (x, y), (tx, ty) = point_at(path, cum, (u % c["L"]) / c["L"] * length)
             pts.append(Gf.Vec3f(x, y, 0.02))
             oris.append(yaw_quat(tx, ty))
-        pos_attr.Set(Vt.Vec3fArray(pts), f)
-        ori_attr.Set(Vt.QuathArray(oris), f)
+        pos_attr.Set(Vt.Vec3fArray(pts), code)
+        ori_attr.Set(Vt.QuathArray(oris), code)
     inst.GetPrim().CreateAttribute("urbantwin:illustrative", Sdf.ValueTypeNames.Bool, custom=True).Set(True)
     inst.GetPrim().CreateAttribute("urbantwin:note", Sdf.ValueTypeNames.String, custom=True).Set(
         f"ILLUSTRATIVE traffic: no traffic data. One vehicle per {CAR_SPACING_M:g} m of road at ~{CAR_SPEED_KMH:g} km/h, "
-        f"{AUTO_SHARE:.0%} auto-rickshaws, {TIME_SCALE:g}x real time, driving on the left.")
+        f"{AUTO_SHARE:.0%} auto-rickshaws, real time, driving on the left. One speed per road with even "
+        "spacing, so vehicles on a road never overlap; vehicles on crossing roads can still meet at junctions.")
     stage.GetRootLayer().Save()
     return len(cars)
 
@@ -546,9 +681,9 @@ def write_live_stage():
 def prepare():
     """One-time: simulator city, survey citizens placed on it, route polylines, illustrative traffic."""
     nodes, ways = parse_osm()
-    city, polylines, graph_nodes = build_city(nodes, ways)
+    city, polylines, segment_hw, graph_nodes = build_city(nodes, ways)
     (HERE / "city_pune.json").write_text(json.dumps(city, indent=1), encoding="utf-8")
-    routes = {"start": {r["id"]: r["start"] for r in city["routes"]}, "polylines": polylines}
+    routes = {"start": {r["id"]: r["start"] for r in city["routes"]}, "polylines": polylines, "hw": segment_hw}
     (HERE / "pune_routes.json").write_text(json.dumps(routes), encoding="utf-8")
     print(f"city_pune.json: {len(city['buildings'])} buildings, {len(city['routes'])} routes, graph {graph_nodes} nodes")
     run([PY, ARGUS / "phase10" / "assign_homes.py", "--city", HERE / "city_pune.json",
@@ -612,7 +747,7 @@ def main():
         "walkers": walkers, "vehicles_illustrative": n_cars, "auto_rickshaw_share": AUTO_SHARE,
         "agent_models": "low-poly people and vehicles, illustrative geometry (not data)",
         "before_after": "demoState variant on /World: Stressed = before arm, Intervention = simulator after arm",
-        "playback": f"{FRAMES} frames @ {FPS} fps = {FRAMES / FPS:g} s, {TIME_SCALE:g}x real time",
+        "playback": f"{DURATION_S} s loop in real time, positions sampled {SAMPLE_HZ}x/s and interpolated by USD",
     }
     mpath.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"walkers {walkers}, vehicles {n_cars}. Next: run pune_view.py")

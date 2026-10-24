@@ -37,8 +37,8 @@ CITIES = {
         "visual_buildings": None,  # read from the view's manifest below
         "visual_trees": None,
         "limitations": [
-            "Not a time-evolving crowd simulation. Each walker replays its simulator-chosen route at "
-            "3x real time; behaviour colours are one equilibrium.",
+            "Not a time-evolving crowd simulation. Each walker replays its simulator-chosen route in real "
+            "time on the pavement, with no collision avoidance; behaviour colours are one equilibrium.",
             "Vehicles are illustrative only: there is no traffic data for this area.",
             "Citizen behaviour is calibrated on the 41-person Argus survey, not on Pune residents.",
             "Facade windows, wall tints and the people and vehicle models are appearance, not data.",

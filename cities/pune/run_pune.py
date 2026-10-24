@@ -91,7 +91,7 @@ def run_pune(run_id, *, temperature, humidity, rainfall, population, interventio
             "scenario": {"temperature": temperature, "humidity": humidity,
                          "rainfall": rainfall, "population": population},
             "selected_recommendation_ids": list(interventions),
-            "animation": {"frames": pune_sim.FRAMES, "duration_seconds": pune_sim.FRAMES / pune_sim.FPS,
+            "animation": {"duration_seconds": pune_sim.DURATION_S, "samples_per_second": pune_sim.SAMPLE_HZ,
                           "time_scale": pune_sim.TIME_SCALE},
             "artifacts": {"simulation_report": "simulation_report.json",
                           "before_agents_usd": "usd/agents_before.usdc",
