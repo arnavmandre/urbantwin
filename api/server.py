@@ -343,7 +343,9 @@ def _first(query: dict, name: str, default: str) -> str:
 def serve(host: str, port: int, root: Path | None = None) -> None:
     """Bind to ``host:port`` and serve until interrupted."""
     root = Path(root) if root is not None else Path(__file__).resolve().parents[1]
-    server, _ = create_app(root, host=host, port=port)
+    # Only the real server logs terminal run states; test apps stay side-effect free.
+    manager = RunManager(root, events_path=root / "data" / "run_events.jsonl")
+    server, _ = create_app(root, manager, host=host, port=port)
     print(f"UrbanTwin API listening on http://{host}:{port} (root={root})")
     try:
         server.serve_forever()

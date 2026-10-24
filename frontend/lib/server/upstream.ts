@@ -18,6 +18,15 @@ export function upstreamBase(): string | null {
   return base ? base.replace(/\/+$/, "") : null;
 }
 
+/**
+ * Grafana run-history dashboard (analytics/, see docs/PHASE18_GRAFANA_ANALYTICS.md).
+ * Unset means no Analytics link: the dashboard only exists when that stack runs.
+ */
+export function analyticsBase(): string | null {
+  const base = process.env.URBANTWIN_GRAFANA_URL?.trim();
+  return base ? base.replace(/\/+$/, "") : null;
+}
+
 export function isMockMode(): boolean {
   return upstreamBase() === null;
 }

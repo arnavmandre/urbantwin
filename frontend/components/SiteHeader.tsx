@@ -31,7 +31,10 @@ export function SiteHeader({
   aboutOpen: open,
   onAboutOpenChange,
   about,
+  analyticsHref,
 }: {
+  /** Grafana run-history dashboard; omitted when analytics is not configured. */
+  analyticsHref?: string | null;
   health: Health;
   viewerStatus: ViewerState["status"];
   sceneLabel: string;
@@ -97,6 +100,19 @@ export function SiteHeader({
             <span className="hidden sm:inline">{viewport.label}</span>
             <span className="sr-only sm:hidden">{viewport.label}</span>
           </Pill>
+          {analyticsHref ? (
+            <a
+              href={analyticsHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Run history and baseline-vs-intervention comparisons in Grafana (opens a new tab)"
+              className="flex items-center gap-1.5 rounded-full border border-hairline px-2.5 py-1 text-[11px] font-semibold text-ink-2 transition-colors hover:text-ink"
+            >
+              <Icon name="chart" className="size-3.5" />
+              <span className="hidden sm:inline">Analytics</span>
+              <span className="sr-only sm:hidden">Analytics (Grafana)</span>
+            </a>
+          ) : null}
           <button
             type="button"
             onClick={() => onAboutOpenChange(!open)}

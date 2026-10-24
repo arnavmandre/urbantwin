@@ -154,6 +154,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
         sceneLabel={run?.city?.name ?? streamConfig.stage}
         aboutOpen={aboutOpen}
         onAboutOpenChange={setAboutOpen}
+        analyticsHref={analyticsHref(bootstrap.analyticsUrl, run)}
         about={
           <Disclosures
             health={health}
@@ -400,6 +401,18 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
       </main>
     </div>
   );
+}
+
+/**
+ * Deep link into the Grafana dashboard, focused on the run on screen. Only a
+ * completed live run is passed: it is the only kind the importer has stored.
+ */
+function analyticsHref(base: string | null, run: RunSummary | null): string | null {
+  if (!base) return null;
+  const url = `${base}/d/argus-observatory/argus-urban-risk-observatory?orgId=1`;
+  return run?.source === "live" && run.status === "complete"
+    ? `${url}&var-run=${encodeURIComponent(run.run_id)}`
+    : url;
 }
 
 function interventionLabel(run: RunSummary): string | null {

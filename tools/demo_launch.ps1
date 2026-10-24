@@ -2,10 +2,12 @@
 # Usage:
 #   .\tools\demo_launch.ps1
 #   .\tools\demo_launch.ps1 -Force          # free ports 8000/3000/49100 first
+#   .\tools\demo_launch.ps1 -NoAnalytics    # skip Grafana + run importer
 #   .\Start-Argus.bat                       # double-click from Explorer
 param(
     [switch]$Force,
-    [switch]$NoBrowser
+    [switch]$NoBrowser,
+    [switch]$NoAnalytics
 )
 
 $ErrorActionPreference = "Stop"
@@ -72,6 +74,13 @@ function Stop-KitProcesses {
 function Stop-EverythingForDemo {
     Write-Host "Force: stopping demo processes on 8000 / 3000 / 3001 / 49100 / 47998..."
     Stop-KitProcesses
+    # The run importer holds no port; match it by its command line.
+    Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { [string]$_.CommandLine -like "*import_runs.py*--watch*" } |
+        ForEach-Object {
+            Write-Host ("  Stopping run importer PID {0}" -f $_.ProcessId)
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+        }
     foreach ($port in 8000, 3000, 3001, 49100, 47998) {
         Stop-ListenersOnPort -Port $port
     }
@@ -163,6 +172,9 @@ $KitRoot = "C:\Users\arnav\omniverse\kit-app-template"
 $ApiScript = Join-Path $LogDir ("start-api-{0}.ps1" -f $Stamp)
 $FrontendScript = Join-Path $LogDir ("start-frontend-{0}.ps1" -f $Stamp)
 $KitScript = Join-Path $LogDir ("start-kit-{0}.ps1" -f $Stamp)
+$ImporterLog = Join-Path $LogDir ("importer-{0}.log" -f $Stamp)
+$ImporterScript = Join-Path $LogDir ("start-importer-{0}.ps1" -f $Stamp)
+$AnalyticsUrl = $null
 
 Write-Host "Argus AI - demo launch"
 Write-Host ("  Argus root: {0}" -f $ArgusRoot)
@@ -230,9 +242,50 @@ if ($kitStarted) {
     Write-Warning ("Kit launcher not found at {0} - start Kit manually for stream online." -f $KitBat)
 }
 
+# Analytics (optional): PostgreSQL + Grafana in Docker, plus an importer that
+# copies finished runs into the database. Skipped, with a warning, when Docker
+# is not running; the 3D demo does not depend on it.
+if (-not $NoAnalytics) {
+    # docker writes progress to stderr; under "Stop", Windows PowerShell turns
+    # that into a terminating error, so judge success by exit code alone.
+    $savedPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $dockerUp = $false
+    $composeOk = $false
+    try {
+        & docker info --format "{{.ServerVersion}}" *> $null
+        $dockerUp = ($LASTEXITCODE -eq 0)
+        if ($dockerUp) {
+            & docker compose -f (Join-Path $ArgusRoot "analytics\docker-compose.yml") up -d *> $null
+            $composeOk = ($LASTEXITCODE -eq 0)
+        }
+    } catch {
+        $dockerUp = $false
+    } finally {
+        $ErrorActionPreference = $savedPreference
+    }
+    if ($dockerUp) {
+        if ($composeOk) {
+            $importerLines = @(
+                ("Set-Location -LiteralPath '{0}'" -f $ArgusRoot)
+                '$Host.UI.RawUI.WindowTitle = ''Argus AI run importer (Grafana)'''
+                ("python analytics\import_runs.py --watch 2>&1 | Tee-Object -FilePath '{0}'" -f $ImporterLog)
+            )
+            $importerLines | Set-Content -LiteralPath $ImporterScript -Encoding ASCII
+            Start-DemoWindow -Title "Run importer (Grafana)" -ScriptPath $ImporterScript
+            $AnalyticsUrl = "http://localhost:3300"
+        } else {
+            Write-Warning "docker compose up failed for analytics\docker-compose.yml - continuing without Grafana."
+        }
+    } else {
+        Write-Warning "Docker is not running - continuing without Grafana analytics (no Analytics link)."
+    }
+}
+
 $feLines = @(
     ("Set-Location -LiteralPath '{0}'" -f $FrontendDir)
     '$env:URBANTWIN_API_BASE = ''http://127.0.0.1:8000'''
+    $(if ($AnalyticsUrl) { "`$env:URBANTWIN_GRAFANA_URL = '$AnalyticsUrl'" } else { '# analytics not running' })
     '$Host.UI.RawUI.WindowTitle = ''Argus AI Dashboard'''
     ("npm run dev 2>&1 | Tee-Object -FilePath '{0}'" -f $FrontendLog)
 )
@@ -293,6 +346,10 @@ Write-Host ("  Dashboard:  {0}" -f $dashboard)
 Write-Host "  API health: http://127.0.0.1:8000/api/health"
 Write-Host "  Stream cfg: http://127.0.0.1:8000/api/stream/config"
 Write-Host "  Kit signal: tcp://127.0.0.1:49100 (headless streaming host)"
+if ($AnalyticsUrl) {
+    Write-Host ("  Grafana:    {0}/d/argus-observatory (read-only; admin login to edit)" -f $AnalyticsUrl)
+    Write-Host ("  Importer log: {0}" -f $ImporterLog)
+}
 Write-Host ""
 Write-Host "Omniverse tip: there is no editor window. Use Chrome/Edge; wait for viewport = Live."
 Write-Host "Smoke test:  python tools\demo_smoke.py"

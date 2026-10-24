@@ -20,7 +20,8 @@ export type IconName =
   | "info"
   | "play"
   | "pause"
-  | "restart";
+  | "restart"
+  | "chart";
 
 const PATHS: Record<IconName, string[]> = {
   flood: [
@@ -65,6 +66,7 @@ const PATHS: Record<IconName, string[]> = {
   play: ["M8 5v14l11-7L8 5z"],
   pause: ["M9 5v14", "M15 5v14"],
   restart: ["M4 12a8 8 0 1 0 2.3-5.7", "M4 4v4h4"],
+  chart: ["M4 20h16", "M7 16v-5", "M12 16V6", "M17 16v-8"],
 };
 
 export function Icon({

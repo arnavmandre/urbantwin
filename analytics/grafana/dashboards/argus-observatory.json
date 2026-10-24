@@ -1,0 +1,1110 @@
+{
+  "uid": "argus-observatory",
+  "title": "Argus Urban Risk Observatory",
+  "description": "Run history and baseline-vs-intervention comparisons for Argus simulator runs.",
+  "tags": [
+    "argus"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "graphTooltip": 1,
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-60d",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "Open Argus",
+      "type": "link",
+      "url": "http://localhost:3000/",
+      "targetBlank": false,
+      "icon": "external link"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "run",
+        "label": "Run",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "argus-pg"
+        },
+        "query": "SELECT run_id FROM analytics.simulation_runs WHERE status = 'complete' ORDER BY created_at DESC",
+        "definition": "completed runs, newest first",
+        "refresh": 2,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {},
+        "options": []
+      },
+      {
+        "name": "metric",
+        "label": "Trend metric",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "argus-pg"
+        },
+        "query": "SELECT metric_name AS __value, metric_label AS __text FROM (SELECT DISTINCT metric_name, metric_label FROM analytics.simulation_metrics) m ORDER BY metric_name = 'human_experience_index' DESC, metric_label",
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {},
+        "options": []
+      },
+      {
+        "name": "metric_label",
+        "type": "query",
+        "hide": 2,
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "argus-pg"
+        },
+        "query": "SELECT DISTINCT metric_label FROM analytics.simulation_metrics WHERE metric_name = '$metric'",
+        "refresh": 1,
+        "current": {},
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "id": 2,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**What this shows.** Every number below is copied from Argus simulator output (`data/runs/`) or the API's run log. Scores are heuristic prototype estimates from synthetic, survey-calibrated citizens, not validated predictions. Temperature, humidity and rainfall are **scenario inputs someone typed**, not observed weather. Baseline and intervention are the before and after arms of the **same run**."
+      }
+    },
+    {
+      "type": "row",
+      "title": "Run summary (all imported runs)",
+      "id": 3,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Simulation runs",
+      "id": 4,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Every run imported: completed runs from data/runs/, plus failed or cancelled runs the API logged.",
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 0,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT count(*) AS runs FROM analytics.simulation_runs"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "showPercentChange": false,
+        "wideLayout": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2563eb"
+          },
+          "noValue": "No runs imported"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Completed",
+      "id": 5,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 5,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT count(*) FILTER (WHERE status = 'complete') AS completed FROM analytics.simulation_runs"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "showPercentChange": false,
+        "wideLayout": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2f8f5b"
+          },
+          "noValue": "No runs imported"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Failed or cancelled",
+      "id": 6,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Only runs the API logged to data/run_events.jsonl. Failures before that log existed, and CLI failures, are not counted.",
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 10,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT count(*) FILTER (WHERE status <> 'complete') AS failed FROM analytics.simulation_runs"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "showPercentChange": false,
+        "wideLayout": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#c4314b"
+          },
+          "noValue": "No runs imported"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Average pipeline time",
+      "id": 7,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Sum of the pipeline's recorded stage times for completed runs (simulation, export, USD, validation). Excludes queueing.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 15,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT avg(pipeline_seconds) AS seconds FROM analytics.simulation_runs WHERE status = 'complete'"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "showPercentChange": false,
+        "wideLayout": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2563eb"
+          },
+          "noValue": "No runs imported",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Latest completed run",
+      "id": 8,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 19,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT run_id FROM analytics.simulation_runs WHERE status = 'complete' ORDER BY created_at DESC LIMIT 1"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "showPercentChange": false,
+        "wideLayout": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "string",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "noValue": "No runs imported"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Baseline vs intervention: $run",
+      "id": 9,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Scores, baseline vs intervention",
+      "id": 10,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Both bars come from the selected run: its before arm and its after arm, with the same scenario and metric definitions. Check each metric's direction in the table: for heat, rain impact and crowding, lower is better.",
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT metric_label AS \"Metric\", baseline AS \"Baseline (before)\", intervention AS \"Intervention (after)\"\nFROM analytics.metric_comparison\nWHERE run_id = '$run' AND unit = 'score /100'\nORDER BY abs(abs_change) DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Metric",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "showValue": "always",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "fullHighlight": false
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "unit": "none",
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Baseline (before)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9aa4b2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Intervention (after)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2563eb"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "title": "What changed",
+      "id": 11,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Change = intervention minus baseline. Relative change is blank when the baseline is zero. 'Better' accounts for each metric's direction.",
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 10,
+        "y": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT metric_label AS \"Metric\",\n       CASE WHEN higher_is_better THEN '↑ better' ELSE '↓ better' END AS \"Direction\",\n       round(baseline::numeric, 2) AS \"Baseline\",\n       round(intervention::numeric, 2) AS \"Intervention\",\n       round(abs_change::numeric, 2) AS \"Change\",\n       round(rel_change_pct::numeric, 1) AS \"Relative %\",\n       outcome AS \"Outcome\"\nFROM analytics.metric_comparison\nWHERE run_id = '$run'\nORDER BY CASE outcome WHEN 'better' THEN 0 WHEN 'worse' THEN 1 ELSE 2 END, abs(abs_change) DESC"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "Select a completed run"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Outcome"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "better": {
+                        "text": "Better",
+                        "color": "#2f8f5b",
+                        "index": 0
+                      },
+                      "worse": {
+                        "text": "Worse",
+                        "color": "#c4314b",
+                        "index": 1
+                      },
+                      "unchanged": {
+                        "text": "Unchanged",
+                        "color": "#8a8f98",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Change"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Direction"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Baseline"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Intervention"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 95
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Change"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 75
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Relative %"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Metric"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 175
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "title": "Run context",
+      "id": 12,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Scenario inputs are what was typed into Argus, not observed weather. Population equivalent is a demand scale, not a headcount.",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT r.run_id AS \"Run\", r.created_at AS \"Started\", coalesce(r.scenario_preset, 'custom') AS \"Preset\",\n       coalesce(r.intervention, 'none') AS \"Intervention applied\",\n       i.temperature_c AS \"Temperature (input, °C)\", i.humidity_pct AS \"Humidity (input, %)\",\n       i.rainfall_prototype AS \"Rainfall (input, prototype scale)\",\n       i.population_equivalent AS \"Population equivalent (input)\", r.city_id AS \"City data\"\nFROM analytics.simulation_runs r LEFT JOIN analytics.scenario_inputs i USING (run_id)\nWHERE r.run_id = '$run'"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Human-impact trends across runs",
+      "id": 13,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "$metric_label, latest 15 runs: baseline and intervention",
+      "id": 14,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Newest run at the top. Runs use different scenarios, so this is a history of simulated results, not a trend in the real city.",
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT run_label AS \"Run\", baseline AS \"Baseline (before)\", intervention AS \"Intervention (after)\"\nFROM (SELECT r.run_id || '  ' || coalesce(r.scenario_preset, 'custom') AS run_label, r.created_at,\n             c.baseline, c.intervention\n      FROM analytics.metric_comparison c JOIN analytics.simulation_runs r USING (run_id)\n      WHERE c.metric_name = '$metric' AND $__timeFilter(r.created_at)\n      ORDER BY r.created_at DESC LIMIT 15) t\nORDER BY created_at DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Run",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "showValue": "never",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "min": 0,
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Baseline (before)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9aa4b2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Intervention (after)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2563eb"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Average change from intervention, by preset",
+      "id": 15,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Mean of (intervention minus baseline) for the selected metric, grouped by the preset each run used. Custom = inputs that match no preset.",
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 14,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT coalesce(r.scenario_preset, 'custom') AS \"Preset\", avg(c.abs_change) AS \"Average change\"\nFROM analytics.metric_comparison c JOIN analytics.simulation_runs r USING (run_id)\nWHERE c.metric_name = '$metric' AND $__timeFilter(r.created_at)\nGROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2563eb"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Scenario inputs and run log",
+      "id": 16,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Scenario inputs, latest 15 runs (typed inputs, not observed weather)",
+      "id": 17,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "What each run was asked to simulate. These are never measurements. Units differ: °C, %, and a 0-100 prototype rainfall scale.",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT run_label AS \"Run\", temperature_c AS \"Temperature °C\", humidity_pct AS \"Humidity %\",\n       rainfall_prototype AS \"Rainfall (prototype scale)\"\nFROM (SELECT r.run_id || '  ' || coalesce(r.scenario_preset, 'custom') AS run_label, r.created_at, i.*\n      FROM analytics.simulation_runs r JOIN analytics.scenario_inputs i USING (run_id)\n      WHERE $__timeFilter(r.created_at)\n      ORDER BY r.created_at DESC LIMIT 15) t\nORDER BY created_at DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "xField": "Run",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "showValue": "never",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temperature °C"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e8743b"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Humidity %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9aa4b2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rainfall (prototype scale)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3b82f6"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "title": "Run log",
+      "id": 18,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "argus-pg"
+      },
+      "description": "Most recent first. Source: run_manifest = completed run read from data/runs/; api_event = a failed or cancelled run the API logged.",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "argus-pg"
+          },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT run_id AS \"Run\", created_at AS \"Started\", status AS \"Status\",\n       coalesce(scenario_preset, 'custom') AS \"Preset\", coalesce(intervention, '-') AS \"Intervention\",\n       round(pipeline_seconds::numeric, 1) AS \"Pipeline s\", coalesce(error_code, '') AS \"Error\",\n       record_source AS \"Source\"\nFROM analytics.simulation_runs\nWHERE $__timeFilter(created_at)\nORDER BY created_at DESC LIMIT 200"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Run"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Started"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "complete": {
+                        "color": "#2f8f5b",
+                        "index": 0
+                      },
+                      "failed": {
+                        "color": "#c4314b",
+                        "index": 1
+                      },
+                      "cancelled": {
+                        "color": "#8a8f98",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

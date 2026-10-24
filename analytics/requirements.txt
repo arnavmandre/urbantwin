@@ -1,0 +1,2 @@
+# Only the run importer needs this; the API and simulator stay stdlib-only.
+psycopg[binary]>=3.2

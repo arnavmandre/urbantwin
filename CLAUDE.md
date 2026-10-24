@@ -31,6 +31,7 @@ context loss.
 | `frontend/` | web | Next.js dashboard. Default = recorded fixtures (`mode: "mock"`). Set `URBANTWIN_API_BASE` to proxy Phase 12. See `frontend/README.md`. |
 | `phase9/` | realism + demo | Materials, heights, trees, lighting, cameras, overlays — all `over` layers — plus `build_city_from_osm.py`. **Open `phase9/scene/main.usda` for the demo.** |
 | `phase10/` | survey | Real survey -> calibrated synthetic citizens. `data/` holds the four-table dataset. |
+| `analytics/` | run history | Phase 18: Postgres + Grafana (Docker) and `import_runs.py`, which copies `data/runs/` + `data/run_events.jsonl` into the DB. See `docs/PHASE18_GRAFANA_ANALYTICS.md`. |
 | `docs/` | contracts | `INTEGRATION_CONTRACT.md` is authoritative. |
 
 Frontend/backend product context is in `docs/FRONTEND_BACKEND_HANDOFF.md`. Local
@@ -121,6 +122,11 @@ Only claim what the code does when executed. Verified as of this writing:
   browser. Without them the viewport stays offline; never claim it in mock mode.
   While streaming the GPU sits around 60% (720p30, RTX Real-Time 2.0), so do not
   describe it as lightweight.
+- ✅ Phase 18: Grafana dashboard `argus-observatory` (http://localhost:3300) over
+  every completed run in `data/runs/`, kept in sync by `import_runs.py --watch`.
+  Baseline vs intervention = before/after arms of one run. Failed/cancelled
+  counts cover only runs logged since `data/run_events.jsonl` existed. Grafana
+  visualises output; it validates nothing.
 - ✅ `integration/export_snapshot.py` closes the loop: simulator report ->
   canonical v1 snapshot -> USD. 12/12 integration tests pass, agents land within
   1mm of their route geometry, snapshots are `data_kind: simulation`.
@@ -161,6 +167,12 @@ python -m api --host 127.0.0.1 --port 8000
 $env:URBANTWIN_API_BASE = "http://127.0.0.1:8000"
 cd frontend; npm run dev
 # operator notes: docs/PHASE12_LOCAL_API.md
+
+# Phase 18 Grafana run analytics (demo_launch.ps1 does this when Docker runs)
+docker compose -f analytics\docker-compose.yml up -d
+python analytics\import_runs.py --watch
+$env:URBANTWIN_GRAFANA_URL = "http://localhost:3300"   # Analytics link in the header
+python -m unittest analytics.test_import_runs
 
 # Phase 14 browser WebRTC (branch phase13-streaming-kit; Chromium required)
 # 1) Kit host: cd kit-app-template; .\launch_urbantwin_streaming.bat

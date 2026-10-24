@@ -2,7 +2,7 @@ import "server-only";
 
 import { fixtures } from "./fixtures";
 import { recordedRun, resolveRun } from "./run-store";
-import { upstreamBase } from "./upstream";
+import { analyticsBase, upstreamBase } from "./upstream";
 import type {
   Health,
   ModelCard,
@@ -28,6 +28,8 @@ export interface Bootstrap {
   run: RunSummary | null;
   /** Set when a configured live backend could not be reached. */
   upstreamError: string | null;
+  /** Grafana base URL from URBANTWIN_GRAFANA_URL; null hides the Analytics link. */
+  analyticsUrl: string | null;
 }
 
 const UNREACHABLE_HEALTH = (base: string, detail: string): Health => ({
@@ -50,6 +52,10 @@ const UNREACHABLE_HEALTH = (base: string, detail: string): Health => ({
 });
 
 export async function loadBootstrap(runId?: string): Promise<Bootstrap> {
+  return { ...(await loadData(runId)), analyticsUrl: analyticsBase() };
+}
+
+async function loadData(runId?: string): Promise<Omit<Bootstrap, "analyticsUrl">> {
   const base = upstreamBase();
 
   if (!base) {

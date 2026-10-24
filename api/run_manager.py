@@ -90,9 +90,13 @@ class RunManager:
     exits and any child process is cleared.
     """
 
-    def __init__(self, root: Path, *, pipeline_fn=None):
+    def __init__(self, root: Path, *, pipeline_fn=None, events_path: Path | None = None):
         self.root = Path(root)
         self._pipeline_fn = pipeline_fn or self._subprocess_pipeline
+        # Optional JSON-lines log of every run's final status. Failed and
+        # cancelled runs leave nothing in data/runs/, so this is the only
+        # durable record of them (read by analytics/import_runs.py).
+        self._events_path = Path(events_path) if events_path else None
         self._lock = threading.RLock()
         self._runs: dict[str, dict] = {}
         self._active_proc: subprocess.Popen | None = None
@@ -264,9 +268,38 @@ class RunManager:
         try:
             self._run_pipeline_worker(run_id)
         finally:
+            self._record_terminal(run_id)
             with self._lock:
                 if self._busy_run_id == run_id:
                     self._busy_run_id = None
+
+    def _record_terminal(self, run_id: str) -> None:
+        """Append the run's final status to the events log, if one is configured.
+
+        Never raises: losing an analytics line must not break a run.
+        """
+        if self._events_path is None:
+            return
+        with self._lock:
+            record = self._runs.get(run_id)
+            if record is None:
+                return
+            error = record.get("error") or {}
+            event = {
+                "run_id": run_id,
+                "status": record["status"],
+                "created_utc": record["created_utc"],
+                "finished_utc": _utc_now(),
+                "scenario": dict(record["scenario"]),
+                "error_code": error.get("code"),
+                "error_message": (error.get("message") or "")[:500] or None,
+            }
+        try:
+            self._events_path.parent.mkdir(parents=True, exist_ok=True)
+            with self._events_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(event) + "\n")
+        except OSError:
+            pass
 
     def _run_pipeline_worker(self, run_id: str) -> None:
         while self._pause_workers:

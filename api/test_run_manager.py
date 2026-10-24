@@ -1,6 +1,7 @@
 """Unit tests for the in-memory single-worker RunManager."""
 from __future__ import annotations
 
+import json
 import tempfile
 import threading
 import time
@@ -178,6 +179,35 @@ class RunManagerTests(unittest.TestCase):
             self.assertEqual(summary["error"]["code"], "simulation_failed")
             self.assertIn("simulator exploded", summary["error"]["message"])
             self.assertIsNone(manager.list_active())
+
+    def test_terminal_status_is_appended_to_events_log(self):
+        def failing_pipeline(config):
+            raise PipelineError("simulator exploded")
+
+        with tempfile.TemporaryDirectory() as directory:
+            events = Path(directory) / "data" / "run_events.jsonl"
+            manager = RunManager(
+                Path(directory), pipeline_fn=failing_pipeline, events_path=events
+            )
+            created = manager.create_run(_valid_request())
+            self.assertTrue(
+                _wait_until(lambda: events.exists() and manager.list_active() is None)
+            )
+            lines = events.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(lines), 1)
+            event = json.loads(lines[0])
+            self.assertEqual(event["run_id"], created["run_id"])
+            self.assertEqual(event["status"], "failed")
+            self.assertEqual(event["error_code"], "simulation_failed")
+            self.assertEqual(event["scenario"]["population"], 42000)
+            self.assertTrue(event["created_utc"] and event["finished_utc"])
+
+    def test_events_log_is_off_by_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = RunManager(Path(directory), pipeline_fn=_write_report)
+            manager.create_run(_valid_request())
+            self.assertTrue(_wait_until(lambda: manager.list_active() is None))
+            self.assertFalse((Path(directory) / "data" / "run_events.jsonl").exists())
 
     def test_unknown_run_returns_none(self):
         with tempfile.TemporaryDirectory() as directory:
