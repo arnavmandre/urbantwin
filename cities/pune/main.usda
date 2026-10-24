@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [
+        @environment.usda@,
+        @city_base.usda@
+    ]
+    upAxis = "Z"
+)
+

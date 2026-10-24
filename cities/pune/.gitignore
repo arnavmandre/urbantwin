@@ -1,0 +1,16 @@
+__pycache__/
+*.zip
+# Regenerated deterministically in ~15 s by `python pune_sim.py` then `python pune_view.py`
+city_pune.json
+citizens_pune.json
+pune_routes.json
+sim_report_pune.json
+traffic.usdc
+agents_before.usdc
+agents_after.usdc
+main_live.usda
+main_view_400m.usda
+view_run.usdc
+facade_tile.png
+# Spec deliverable render (build_script.py); kept out of git for size
+render_aerial_45.png

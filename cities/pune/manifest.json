@@ -1,0 +1,187 @@
+{
+  "bbox": {
+    "south": 18.515,
+    "north": 18.524,
+    "west": 73.8506,
+    "east": 73.86
+  },
+  "origin_lon0_lat0": [
+    73.8553,
+    18.5195
+  ],
+  "projection": "local tangent-plane equirectangular (x = R*radians(lon-lon0)*cos(radians(lat0)), y = R*radians(lat-lat0))",
+  "projection_reason": "All layers use the scripted local-metres projection, matching the London scene's conventions. UTM 43N was not used for any layer because UTM grid north is ~0.36 deg off true north at this location, which would misalign UTM-projected layers against scripted ones by ~3 m at tile edges. The UTM 43N easting/northing of the origin is recorded below for reference only; no geometry was built from it.",
+  "import_path": "scripted (section 4 fallback projection) for buildings, roads, green spaces, trees. BlenderGIS not installed or used.",
+  "blender_version": "4.5.15",
+  "counts": {
+    "green_spaces": 12,
+    "green_spaces_from_relations": 4,
+    "transit_markers": 4,
+    "railway_ways_present_not_rendered": 6,
+    "trees": 329,
+    "buildings": 2069,
+    "roads": 251,
+    "footways": 133,
+    "skipped_buildings_count": 0,
+    "tree_prototypes": 1
+  },
+  "height_source_counts": {
+    "inferred_class": 1902,
+    "osm_height": 31,
+    "interpolated": 127,
+    "osm_levels": 9
+  },
+  "material_class_counts": {
+    "retail": 4,
+    "other": 2047,
+    "religious": 7,
+    "civic": 2,
+    "healthcare": 1,
+    "residential": 3,
+    "heritage": 2,
+    "commercial": 1,
+    "education": 2
+  },
+  "skipped_buildings": [],
+  "skipped_highways": {},
+  "overpass": {
+    "query": "[out:xml][timeout:180];\n(\n  way[\"building\"](18.5150,73.8506,18.5240,73.8600);\n  relation[\"building\"](18.5150,73.8506,18.5240,73.8600);\n  way[\"highway\"](18.5150,73.8506,18.5240,73.8600);\n  way[\"landuse\"](18.5150,73.8506,18.5240,73.8600);\n  relation[\"landuse\"](18.5150,73.8506,18.5240,73.8600);\n  way[\"leisure\"](18.5150,73.8506,18.5240,73.8600);\n  relation[\"leisure\"](18.5150,73.8506,18.5240,73.8600);\n  way[\"natural\"](18.5150,73.8506,18.5240,73.8600);\n  node[\"natural\"=\"tree\"](18.5150,73.8506,18.5240,73.8600);\n  way[\"railway\"](18.5150,73.8506,18.5240,73.8600);\n  node[\"railway\"](18.5150,73.8506,18.5240,73.8600);\n  way[\"public_transport\"](18.5150,73.8506,18.5240,73.8600);\n  node[\"public_transport\"](18.5150,73.8506,18.5240,73.8600);\n  relation[\"public_transport\"](18.5150,73.8506,18.5240,73.8600);\n);\nout body;\n>;\nout skel qt;\n",
+    "endpoint": "https://overpass-api.de/api/interpreter",
+    "download_timestamp_utc": "2026-10-24T13:08:55.193803+00:00",
+    "osm_base_timestamp": "2026-10-24T13:07:46Z"
+  },
+  "attribution": "\u00a9 OpenStreetMap contributors, ODbL",
+  "utm43n_origin": {
+    "easting": 379172.3948914923,
+    "northing": 2048045.966933507,
+    "epsg": "EPSG:32643"
+  },
+  "building_relations_with_holes_cut": 14,
+  "sample_measurement": {
+    "object": "way_1479321809",
+    "node_a": "13570301530",
+    "node_b": "13762985529",
+    "haversine_m": 127.73216252422775,
+    "expected_xy_a": [
+      -274.83323783744817,
+      322.192002202714
+    ],
+    "expected_xy_b": [
+      -157.78343277688208,
+      373.6883986439396
+    ],
+    "usd_m": 127.87703589265772,
+    "error_pct": 0.11341964746153159,
+    "within_1pct": true
+  },
+  "extended_highway_widths": {
+    "note": "Highway types absent from the spec's width table, mapped to their nearest spec class at the user's request.",
+    "mapping": {
+      "living_street": {
+        "as_class": "residential",
+        "width_m": 6.0
+      },
+      "trunk_link": {
+        "as_class": "trunk",
+        "width_m": 10.0
+      },
+      "secondary_link": {
+        "as_class": "secondary",
+        "width_m": 8.0
+      },
+      "steps": {
+        "as_class": "footway",
+        "width_m": 2.0
+      },
+      "corridor": {
+        "as_class": "footway",
+        "width_m": 2.0
+      }
+    }
+  },
+  "note_railway": "railway way geometry was not rendered: the spec gives explicit widths for road/footway classes only, and inventing a rail-track width was avoided. Railway way count is recorded for honesty; public_transport point features (stops/platforms) are rendered as markers in /World/Transit.",
+  "render": "render_aerial_45.png",
+  "validation": {
+    "up_axis": "Z",
+    "meters_per_unit": 1.0,
+    "default_prim": "/World",
+    "buildings_checked": 2069,
+    "buildings_missing_attrs": 0,
+    "buildings_zero_height": 0,
+    "compliance_errors": []
+  },
+  "simulation": {
+    "note": "User-approved extension beyond the original spec (which said no simulation files). Agents come from the unmodified Argus simulator; cars are illustrative.",
+    "simulator": "Argus Simulation/main.py (unmodified)",
+    "citizens": 600,
+    "citizen_calibration": "Argus phase10 survey, 41 participants - not Pune residents",
+    "home_destination": "phase10/assign_homes.py trip heuristic, not survey data",
+    "sim_buildings": 107,
+    "sim_routes": 3011,
+    "pedestrian_graph_nodes": 1510,
+    "default_scenario": {
+      "temperature": 40,
+      "humidity": 80,
+      "rainfall": 80,
+      "population": 100000
+    },
+    "behaviour_counts": {
+      "before": {
+        "CONTINUE": 178,
+        "SEEK_SHADE": 282,
+        "STRESSED": 138,
+        "AVOID_AREA": 2
+      },
+      "after": {
+        "CONTINUE": 514,
+        "STRESSED": 67,
+        "SEEK_SHADE": 19
+      }
+    },
+    "headline_metrics_before": {
+      "heat_stress": 79.43,
+      "cold_stress": 0.0,
+      "rain_impact": 31.05,
+      "crowding": 38.46,
+      "safety": 58.16,
+      "mobility": 63.75,
+      "comfort": 47.35,
+      "citizen_comfort": 60.6,
+      "mean_travel_minutes": 7.41,
+      "human_experience_index": 57.43
+    },
+    "heuristic_inputs": "drainage 0.5, flood_exposure 0.3, capacity/cooling by type, base_crowding by road class",
+    "walkers": {
+      "before": 600,
+      "after": 600
+    },
+    "vehicles_illustrative": 196,
+    "auto_rickshaw_share": 0.3,
+    "agent_models": "low-poly people and vehicles, illustrative geometry (not data)",
+    "before_after": "demoState variant on /World: Stressed = before arm, Intervention = simulator after arm",
+    "playback": "720 frames @ 24 fps = 30 s, 3x real time"
+  },
+  "view_400m": {
+    "file": "main_view_400m.usda",
+    "square_m": 400.0,
+    "centre": "scene origin (Shaniwar Wada)",
+    "note": "Display subset only; the simulator runs on the full 1 km tile.",
+    "clipping": "flat layers clipped at the edge; buildings/trees/transit kept only if fully inside; walkers/vehicles hidden per frame unless fully inside (view_run.usdc)",
+    "counts": {
+      "buildings_kept": 272,
+      "buildings_hidden": 1797,
+      "flat_kept": 125,
+      "flat_clipped": 37,
+      "flat_hidden": 271,
+      "trees_kept": 115,
+      "trees_hidden": 214
+    },
+    "cameras": [
+      "Overview",
+      "Aerial",
+      "Street",
+      "ProblemZone (aimed at the run's top problem zone)"
+    ],
+    "appearance_not_data": "Facade windows (facade_tile.png), per-building plaster tints and roof colours are illustrative appearance, not OSM data. Heights and footprints are unchanged."
+  }
+}
