@@ -6,7 +6,8 @@ Per-dashboard-run updates go through run_pune.py, which reuses write_run_layer()
 
 Writes main_view_400m.usda (open this in Omniverse / stream it) + facade_tile.png + view_run.usdc.
 Everything is an override on top of main_live.usda; the spec files are untouched and still validate.
-Cameras /World/Cameras/{Overview,Aerial,Street,ProblemZone} match the Kit view_commands allow-list.
+Cameras /World/Cameras/{Overview,Aerial,Street,ProblemZone} match the Kit view_commands allow-list; all but Aerial are
+placed per run where the walkers are (write_run_layer).
 
 Nothing pokes out of the square:
 - roads, footpaths and green areas are clipped polygon-by-polygon at the square edge,
@@ -275,11 +276,9 @@ def build_view():
     rebind(ground, look["soil"], LOOK["soil"][0])
 
     # cameras the Kit view_commands handler switches between (/World/Cameras/<name>)
-    look_at_camera(stage, "Overview", (-260, -260, 240), (0, 0, 0), 24)
-    look_at_camera(stage, "Aerial", (0, 0, 560), (0, 0, 0), 24, up=(0, 1, 0))
-    eye, target = street_shot()
-    look_at_camera(stage, "Street", eye, target, 18)
-    # ProblemZone is authored only in view_run.usdc: an opinion here would be stronger and pin it forever
+    look_at_camera(stage, "Aerial", (0, 0, 480), (0, 0, 0), 24, up=(0, 1, 0))  # whole square, ~420 m frame
+    # Overview, Street and ProblemZone follow the walkers, so they are authored per run in view_run.usdc:
+    # an opinion in this root layer would be stronger and pin them forever.
     root.Save()
 
     generated = pune_sim.read_generated()
@@ -289,7 +288,8 @@ def build_view():
         "clipping": "flat layers clipped at the edge; buildings/trees/transit kept only if fully inside; "
                     "walkers/vehicles hidden per frame unless fully inside (view_run.usdc)",
         "counts": counts,
-        "cameras": ["Overview", "Aerial", "Street", "ProblemZone (aimed at the run's top problem zone)"],
+        "cameras": ["Aerial (whole square)", "Overview, Street, ProblemZone (placed per run where the walkers are; "
+                    "view_run.usdc)"],
         "appearance_not_data": ("Facade windows (facade_tile.png), per-building plaster tints and roof colours are "
                                 "illustrative appearance, not OSM data. Heights and footprints are unchanged."),
     }
@@ -307,26 +307,145 @@ def look_at_camera(stage, name, eye, target, focal_mm, up=(0, 0, 1)):
     xf.AddTransformOp().Set(view.GetInverse())  # look-at gives world->camera; the prim needs camera->world
 
 
-def street_shot():
-    """Eye-level camera on the longest straight carriageway segment near the Wada, looking along it."""
-    nodes, ways = pune_sim.parse_osm()
-    best = None
-    for _, refs, tags in ways:
-        if tags["highway"] not in pune_sim.CAR_ROADS:
+# Kit/USD default horizontal aperture (mm) and the stream width, for on-screen person size.
+APERTURE_MM, STREAM_PX, PERSON_M = 20.955, 1280, 1.7
+# name: (distance from target m, eye height m, focal mm, aim height m). Sized so a person is roughly
+# 20 px (Overview), 35 px (ProblemZone) and 90 px (Street) tall at the target on the 1280 px stream.
+SHOTS = {"Overview": (135.0, 70.0, 24.0, 0.0),
+         "ProblemZone": (55.0, 32.0, 28.0, 0.0),
+         "Street": (24.0, 2.4, 24.0, 1.1)}
+
+
+def obstacles():
+    """Line-of-sight blockers in the 400 m view: building triangles (world space; a box would wrongly fill
+    courtyards such as Shaniwar Wada's) and tree AABBs (xmin, ymin, zmin, xmax, ymax, zmax)."""
+    stage = Usd.Stage.Open(str(HERE / "main_view_400m.usda"))
+    cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ["default", "render"])
+    tris = []
+    for prim in stage.GetPrimAtPath("/World/Buildings").GetChildren():
+        if not prim.IsActive():
             continue
-        for a, b in zip(refs, refs[1:]):
-            if a not in nodes or b not in nodes:
-                continue
-            pa, pb = pune_sim.project(nodes[a][1], nodes[a][0]), pune_sim.project(nodes[b][1], nodes[b][0])
-            if max(map(abs, (*pa, *pb))) > HALF - 30:
-                continue
-            length = math.dist(pa, pb)
-            if best is None or length > best[0]:
-                best = (length, pa, pb)
-    _, (ax, ay), (bx, by) = best
-    ux, uy = (bx - ax) / best[0], (by - ay) / best[0]
-    ex, ey = ax + ux * 5 - uy * 3.5, ay + uy * 5 + ux * 3.5  # pavement on the left, a few metres in
-    return (ex, ey, 1.7), (bx, by, 1.5)
+        for mesh_prim in meshes_under(prim):
+            mesh = UsdGeom.Mesh(mesh_prim)
+            xf = np.array(mesh.ComputeLocalToWorldTransform(Usd.TimeCode.Default()))
+            pts = np.array(mesh.GetPointsAttr().Get())
+            pts = pts @ xf[:3, :3] + xf[3, :3]
+            start = 0
+            idx = mesh.GetFaceVertexIndicesAttr().Get()
+            for n in mesh.GetFaceVertexCountsAttr().Get():
+                face = idx[start:start + n]
+                tris += [(pts[face[0]], pts[face[k]], pts[face[k + 1]]) for k in range(1, n - 1)]
+                start += n
+    boxes = [[*r.GetMin(), *r.GetMax()]
+             for r in (cache.ComputeWorldBound(p).ComputeAlignedRange()
+                       for p in stage.GetPrimAtPath("/World/Trees").GetChildren() if p.IsActive())]
+    return np.array(tris).reshape(-1, 3, 3), np.array(boxes).reshape(-1, 6)
+
+
+def walker_samples(positions_attr, every=12):
+    """Walker positions inside the view, pooled over every n-th time sample."""
+    codes = pune_sim.TIMECODES[::every]
+    p = np.concatenate([np.array(positions_attr.Get(c))[:, :2] for c in codes])
+    return p[(np.abs(p[:, 0]) < HALF - 2) & (np.abs(p[:, 1]) < HALF - 2)]
+
+
+def hotspots(points, centre=None, radius=None, cell=12.0, k=5, spacing=30.0):
+    """Up to k busiest walker spots, densest first and at least `spacing` apart (optionally only within radius
+    of centre). Each is the mean walker position around a dense cell. Empty if there are too few walkers."""
+    if centre is not None:
+        points = points[np.hypot(points[:, 0] - centre[0], points[:, 1] - centre[1]) < radius]
+    if len(points) < 20:
+        return []
+    edges = np.arange(-HALF, HALF + cell, cell)
+    h, _, _ = np.histogram2d(points[:, 0], points[:, 1], bins=[edges, edges])
+    spots = []
+    for flat in np.argsort(-h.ravel()):
+        i, j = np.unravel_index(flat, h.shape)
+        if h[i, j] < 5 or len(spots) == k:
+            break
+        cxy = (edges[i] + cell / 2, edges[j] + cell / 2)
+        if any(math.dist(cxy, s) < spacing for s in spots):
+            continue
+        near = points[(np.abs(points[:, 0] - cxy[0]) < cell) & (np.abs(points[:, 1] - cxy[1]) < cell)]
+        spots.append(tuple(map(float, near.mean(axis=0))))
+    return spots
+
+
+def blocked(obstacle_set, a, b, steps=48):
+    """True if the segment a->b crosses a building triangle or passes through a tree box (inflated 0.5 m).
+    The last 3 m before the target are ignored, so a walker beside a wall still counts as visible."""
+    tris, boxes = obstacle_set
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    length = np.linalg.norm(b - a)
+    end = max(0.0, 1.0 - 3.0 / length)
+    t = np.linspace(0.0, end, steps)[:, None]
+    pts = a + t * (b - a)
+    lo, hi = boxes[:, :3] - 0.5, boxes[:, 3:] + 0.5
+    if ((pts[:, None, :] >= lo[None]) & (pts[:, None, :] <= hi[None])).all(axis=2).any():
+        return True
+    # Moller-Trumbore, all triangles at once, for the segment a -> a + end * (b - a)
+    d = (b - a) * end
+    v0, e1, e2 = tris[:, 0], tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0]
+    p = np.cross(d, e2)
+    det = np.einsum("ij,ij->i", e1, p)
+    ok = np.abs(det) > 1e-9
+    inv = np.where(ok, 1.0 / np.where(ok, det, 1.0), 0.0)
+    s = a - v0
+    u = np.einsum("ij,ij->i", s, p) * inv
+    q = np.cross(s, e1)
+    v = (q @ d) * inv
+    w = np.einsum("ij,ij->i", e2, q) * inv
+    return bool((ok & (u >= 0) & (v >= 0) & (u + v <= 1) & (w > 0) & (w < 1)).any())
+
+
+def place_camera(obstacle_set, walkers, target, shot, keep_inside):
+    """Best clear viewpoint around target for a SHOTS entry: scored by how many walkers it frames, weighted
+    by their on-screen size, among azimuths whose line of sight to the target is not blocked."""
+    dist, height, focal, aim_z = shot
+    tx, ty = target
+    aim = np.array([tx, ty, aim_z])
+    half_h = math.atan(APERTURE_MM / 2 / focal)
+    half_v = math.atan(APERTURE_MM * 9 / 16 / 2 / focal)
+    best = None
+    for az in np.radians(np.arange(0, 360, 15)):
+        eye = np.array([tx + dist * math.cos(az), ty + dist * math.sin(az), height])
+        if keep_inside and max(abs(eye[0]), abs(eye[1])) > HALF - 5:
+            continue
+        if blocked(obstacle_set, eye, aim):
+            continue
+        fwd = aim - eye
+        fwd /= np.linalg.norm(fwd)
+        # look inward: the ground 40 m beyond the target must still be modelled, not the void past the square
+        flat = fwd[:2] / np.linalg.norm(fwd[:2])
+        if max(abs(tx + flat[0] * 40.0), abs(ty + flat[1] * 40.0)) > HALF:
+            continue
+        rel = np.column_stack([walkers - eye[:2], np.full(len(walkers), PERSON_M / 2 - eye[2])])
+        d = np.linalg.norm(rel, axis=1)
+        yaw = np.arctan2(rel[:, 1], rel[:, 0]) - math.atan2(fwd[1], fwd[0])
+        yaw = (yaw + np.pi) % (2 * np.pi) - np.pi
+        pitch = np.arcsin(rel[:, 2] / d) - math.asin(fwd[2])
+        framed = np.nonzero((np.abs(yaw) < half_h) & (np.abs(pitch) < half_v) & (d > 3))[0]
+        framed = framed[np.argsort(d[framed])][:24]  # the nearest ones carry the shot; bounds the cost
+        seen = [i for i in framed
+                if not blocked(obstacle_set, eye, (*walkers[i], PERSON_M * 0.8), steps=24)]
+        px = PERSON_M * focal / d[seen] * STREAM_PX / APERTURE_MM
+        # Openness: rays across the frame that hit a wall well before the target mean a wall fills the shot.
+        right = np.cross(fwd, (0.0, 0.0, 1.0))
+        right /= np.linalg.norm(right)
+        up = np.cross(right, fwd)
+        rays = [fwd + math.tan(half_h) * sx * right + math.tan(half_v) * sy * up
+                for sx in (-0.8, -0.3, 0.3, 0.8) for sy in (-0.6, 0.0, 0.6)]
+        open_rays = 0
+        for r in rays:
+            r = r / np.linalg.norm(r)
+            reach = dist + 20.0 if r[2] >= 0 else min(dist + 20.0, eye[2] / -r[2])  # through the target; stop at the ground
+            open_rays += not blocked(obstacle_set, eye, eye + r * (reach + 3.0), steps=16)
+        score = float(np.minimum(px, 60).sum()) * (0.25 + 0.75 * open_rays / len(rays))
+        if best is None or score > best[0]:
+            best = (score, eye)
+    if best is None:  # every direction blocked: straight down from above the target
+        return 0.0, (float(tx), float(ty) + 1e-3, height + dist), (float(tx), float(ty), aim_z), focal
+    return best[0], tuple(map(float, best[1])), tuple(map(float, aim)), focal
 
 
 ZONE_RE = re.compile(r"^Zone ([ABC])([123])$")
@@ -365,9 +484,12 @@ def write_run_layer(agents_dir, report, out_path):
                 "visible_per_frame_max": int(max(seen))}
 
     vset = stage.GetPrimAtPath("/World").GetVariantSets().AddVariantSet("demoState")
+    walker_positions, sources = {}, []
     for arm, variant in pune_sim.ARMS:
         src = Usd.Stage.Open(str(Path(agents_dir) / f"agents_{arm}.usdc"))
+        sources.append(src)  # keep the stage alive while its attribute is used below
         positions = UsdGeom.PointInstancer(src.GetPrimAtPath("/World/Agents/Walkers")).GetPositionsAttr()
+        walker_positions[arm] = positions
         vset.AddVariant(variant)
         vset.SetVariantSelection(variant)
         with vset.GetVariantEditContext():
@@ -380,11 +502,25 @@ def write_run_layer(agents_dir, report, out_path):
     visible["vehicles"] = mask(UsdGeom.PointInstancer(traffic.GetPrimAtPath("/World/Traffic/Cars")).GetPositionsAttr(),
                                cars.CreateInvisibleIdsAttr(), 3.2)  # half a car (2.1 m) + one sample (1.1 m)
 
+    # People-facing cameras go where this run's (baseline) walkers actually are, with a clear line of sight.
     zones = [z for z in report["before"].get("problem_zones", []) if isinstance(z, str) and ZONE_RE.match(z)]
     cx, cy = zone_centre(zones[0]) if zones else (0.0, 0.0)
-    look_at_camera(stage, "ProblemZone", (cx - 90, cy - 90, 80), (cx, cy, 0), 24)
+    obstacle_set = obstacles()
+    walkers = walker_samples(walker_positions["before"])
+    busy = hotspots(walkers) or [(0.0, 0.0)]
+    # candidate targets per shot; the best-scoring clear view among them wins
+    targets = {"Overview": [(busy[0][0] / 2, busy[0][1] / 2)],  # between the Wada and the busiest spot
+               "Street": busy,
+               "ProblemZone": hotspots(walkers, (cx, cy), 110.0) or [(cx, cy)]}
+    cameras = {}
+    for name, candidates in targets.items():
+        score, eye, aim, focal = max(
+            (place_camera(obstacle_set, walkers, t, SHOTS[name], keep_inside=name == "Street") for t in candidates),
+            key=lambda shot: shot[0])
+        look_at_camera(stage, name, eye, aim, focal)
+        cameras[name] = {"eye": [round(v, 1) for v in eye], "target": [round(v, 1) for v in aim]}
     root.Save()
-    return {"visible": visible, "problem_zone": zones[0] if zones else None}
+    return {"visible": visible, "problem_zone": zones[0] if zones else None, "cameras": cameras}
 
 
 def main():

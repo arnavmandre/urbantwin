@@ -66,3 +66,19 @@ class RunPuneTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CameraGeometryTests(unittest.TestCase):
+    """Sight-line test behind the per-run camera placement (pune_view.blocked)."""
+
+    def test_wall_triangle_blocks_and_open_line_does_not(self):
+        import numpy as np
+        import pune_view
+        wall = np.array([[[5.0, -10.0, 0.0], [5.0, 10.0, 0.0], [5.0, 0.0, 20.0]]])  # plane x = 5
+        no_trees = np.zeros((0, 6))
+        self.assertTrue(pune_view.blocked((wall, no_trees), (0, 0, 2), (20, 0, 2)))
+        self.assertFalse(pune_view.blocked((wall, no_trees), (0, 0, 2), (0, 20, 2)))
+        # a person standing within 3 m behind the wall still counts as seen
+        self.assertFalse(pune_view.blocked((wall, no_trees), (0, 0, 2), (6.5, 0, 2)))
+        tree = np.array([[9.0, -1.0, 0.0, 11.0, 1.0, 6.0]])
+        self.assertTrue(pune_view.blocked((np.zeros((0, 3, 3)), tree), (0, 0, 2), (20, 0, 2)))

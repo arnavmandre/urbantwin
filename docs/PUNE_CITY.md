@@ -37,7 +37,7 @@ so normal use does not need Blender.
 | Dashboard | Use live Pune runs and the Pune stream; recorded mock fixtures do not demonstrate a live Pune simulation. The dashboard presents Pune only. |
 | Kit stream | `tools\demo_launch.ps1 -City pune` (add `-Force` to replace a running stream). Sets `URBANTWIN_STAGE` for the Kit launch scripts and `URBANTWIN_STREAM_CITY` for the API. |
 | Before/After | `demoState` variant on `/World`: `Stressed` = before arm, `Intervention` = the simulator's after arm (same citizens re-simulated under the applied intervention). The existing Kit `view_commands` handler drives it unchanged. |
-| Cameras | `/World/Cameras/{Overview, Aerial, Street, ProblemZone}`; ProblemZone is re-aimed per run at the run's first problem zone. |
+| Cameras | `/World/Cameras/{Overview, Aerial, Street, ProblemZone}`. Aerial is fixed (whole square). Overview, Street and ProblemZone are placed per run (`view_run.usdc`) at the busiest walker spots (ProblemZone: within the first problem zone), choosing the viewpoint with a clear line of sight that frames the most visible people without a wall filling the shot, always looking inward. |
 | Publishing | a run copies `agents_before.usdc`, `agents_after.usdc`, `view_run.usdc` into `cities/pune/`; Kit started with auto-reload picks them up. |
 
 ## Deliberate exception: no canonical v1 snapshots
