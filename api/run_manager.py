@@ -139,7 +139,7 @@ class RunManager:
 
     def get_run(self, run_id: str) -> dict | None:
         with self._lock:
-            record = self._runs.get(run_id)
+            record = self._record_unlocked(run_id)
             if record is None:
                 return None
             return self._summary_unlocked(record)
@@ -182,7 +182,7 @@ class RunManager:
 
     def get_citizens(self, run_id: str, state: str, limit: int, offset: int) -> dict | None:
         with self._lock:
-            record = self._runs.get(run_id)
+            record = self._record_unlocked(run_id)
             if record is None:
                 return None
             report = record.get("report")
@@ -193,7 +193,7 @@ class RunManager:
     def get_report(self, run_id: str) -> dict | None:
         """Return the attached simulator report, or None if the run has not produced one."""
         with self._lock:
-            record = self._runs.get(run_id)
+            record = self._record_unlocked(run_id)
             if record is None:
                 return None
             report = record.get("report")
@@ -201,7 +201,57 @@ class RunManager:
                 return None
             return report
 
+    def latest_completed(self) -> str | None:
+        """Newest completed run in data/runs/: the one the published 3D view shows, since every dashboard run
+        publishes. Lets the dashboard reopen it after an API restart instead of showing no run."""
+        best = None
+        for run_dir in (self.root / "data" / "runs").glob("run_*"):
+            manifest = self._completed_manifest(run_dir.name)
+            if manifest is not None:
+                key = str(manifest.get("created_utc") or "")
+                if best is None or key > best[0]:
+                    best = (key, run_dir.name)
+        return best[1] if best else None
+
     # --- internals ---------------------------------------------------------
+
+    def _completed_manifest(self, run_id: str) -> dict | None:
+        if not self._run_id_ok(run_id):
+            return None
+        try:
+            manifest = json.loads(
+                (self.root / "data" / "runs" / run_id / "manifest.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            return None
+        return manifest if manifest.get("status") == "complete" else None
+
+    def _record_unlocked(self, run_id: str) -> dict | None:
+        """The in-memory run, or a completed run reloaded from data/runs/<id>/ (runs live in memory only,
+        so without this an API restart loses every result while the 3D view still shows the last one)."""
+        record = self._runs.get(run_id)
+        if record is not None:
+            return record
+        manifest = self._completed_manifest(run_id)
+        if manifest is None:
+            return None
+        try:
+            report = json.loads(
+                (self.root / "data" / "runs" / run_id / "simulation_report.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            return None
+        record = {
+            "run_id": run_id,
+            "status": "complete",
+            "created_utc": manifest.get("created_utc") or _utc_now(),
+            "request": {"city": manifest.get("city")},
+            "scenario": manifest.get("scenario") or report.get("scenario") or {},
+            "report": report,
+            "error": None,
+        }
+        self._runs[run_id] = record
+        return record
 
     def _allocate_run_id(self) -> str:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

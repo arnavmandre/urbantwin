@@ -1,19 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BEHAVIORS, BEHAVIOR_META } from "@/lib/behaviors";
 import { cx } from "@/lib/cx";
-import { VIEW_OVERLAYS, type ViewOverlay } from "@/lib/types";
-
-export const OVERLAY_LABELS: Record<ViewOverlay, string> = {
-  behavior: "Behavior",
-  congestion: "Heat map",
-  shade: "Interventions (After)",
-  flood: "Flood (illustrative)",
-  none: "City only",
-};
+import type { ViewOverlay } from "@/lib/types";
 
 type HazardId = "flood" | "heat" | "mobility" | "population";
 
@@ -41,7 +33,7 @@ const HAZARDS: {
     icon: "flood",
     support: "layer",
     overlay: "flood",
-    note: "Illustrative water over the streets. Depth and width scale with this run's flood-risk score, the same on every street (Pune has no elevation or per-street drainage data), so it shows how much water, not where it pools. Compare Before and After to see improved drainage.",
+    note: "Water over the streets, scaled by this run's flood risk. Compare Before and After to see what drainage changes. Illustrative: the risk is the same on every street (no elevation data), so it shows how much water, not where it pools.",
   },
   {
     id: "heat",
@@ -49,7 +41,7 @@ const HAZARDS: {
     icon: "heat",
     support: "layer",
     overlay: "congestion",
-    note: "Streets coloured by the mean heat exposure of the citizens who walked them in this run, for the arm shown (Before or After), on one fixed scale so the two compare. Agents are hidden. Rebuilt for every run (cities/pune/pune_view.py).",
+    note: "Each street coloured by the average heat exposure of the citizens who walked it, on one scale for Before and After. People are hidden.",
   },
   {
     id: "mobility",
@@ -57,7 +49,7 @@ const HAZARDS: {
     icon: "mobility",
     support: "layer",
     overlay: "behavior",
-    note: "Agents coloured by behaviour for the arm shown. In After, the run's interventions are drawn too: shade sails, drains or extra footpaths, at illustrative positions (the simulator applies them city-wide).",
+    note: "Citizens walking their routes, coloured by what they decided to do.",
   },
   {
     id: "population",
@@ -68,75 +60,64 @@ const HAZARDS: {
   },
 ];
 
-const SUPPORT_LABEL = {
-  layer: "3D layer",
-  metrics: "Metrics only",
-  planned: "Planned",
-} as const;
-
 /** Cool-to-hot ramp; the same stops as HEAT_RAMP in cities/pune/pune_view.py, which colours the 3D streets. */
 const HEAT_RAMP =
   "linear-gradient(90deg, rgb(37 99 235), rgb(6 182 212) 35%, rgb(250 204 21) 65%, rgb(220 38 38))";
 
+/** What each intervention looks like in the 3D After view (cities/pune/pune_view.py LOOK_DEMO). */
+const INTERVENTION_KEY: Record<string, { label: string; swatch: string; what: string }> = {
+  shade_boost: { label: "Shade sails", swatch: "rgb(235 224 199)", what: "more shade on the hottest streets" },
+  drainage_boost: { label: "Drains", swatch: "rgb(26 33 46)", what: "kerb drains for better drainage" },
+  route_capacity_boost: {
+    label: "Extra footpaths",
+    swatch: "rgb(140 51 217)",
+    what: "alternative pedestrian routes beside the busiest routes",
+  },
+};
+
 export function HazardToolbar({
   overlay,
   onOverlayChange,
+  state,
+  applied,
 }: {
   overlay: ViewOverlay;
   onOverlayChange: (overlay: ViewOverlay) => void;
+  /** Arm on screen; in After the run's interventions are drawn and listed in the key. */
+  state: "before" | "after";
+  /** Intervention parameters the run applied (shade_boost, drainage_boost, route_capacity_boost). */
+  applied: string[];
 }) {
-  const [noteFor, setNoteFor] = useState<HazardId | null>(null);
-  const [layersOpen, setLayersOpen] = useState(false);
-  const layersRef = useRef<HTMLDivElement>(null);
-  // The menu renders below the toolbar row, outside layersRef, so it needs its own ref for the outside check.
-  const layersMenuRef = useRef<HTMLFieldSetElement>(null);
-
-  const active = HAZARDS.find((h) => h.overlay === overlay)?.id ?? null;
-  const noteHazard = HAZARDS.find((h) => h.id === noteFor);
-
-  useEffect(() => {
-    if (!layersOpen) return;
-    const onPointer = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (!layersRef.current?.contains(target) && !layersMenuRef.current?.contains(target)) setLayersOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointer);
-    return () => document.removeEventListener("pointerdown", onPointer);
-  }, [layersOpen]);
+  const [keyOpen, setKeyOpen] = useState(true);
+  const [plannedNote, setPlannedNote] = useState(false);
+  const active = HAZARDS.find((h) => h.overlay === overlay) ?? HAZARDS.find((h) => h.id === "mobility")!;
+  const drawn = state === "after" ? applied.filter((key) => INTERVENTION_KEY[key]) : [];
 
   return (
-    <div
-      className="pointer-events-auto flex max-w-full flex-col items-start gap-2"
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && (layersOpen || noteFor)) {
-          event.preventDefault();
-          setLayersOpen(false);
-          setNoteFor(null);
-        }
-      }}
-    >
+    <div className="pointer-events-auto flex max-w-full flex-col items-start gap-2">
       <div
         role="toolbar"
-        aria-label="Hazard layers"
+        aria-label="What the 3D view shows"
         className="flex max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-hairline bg-surface/95 p-1 shadow-[var(--shadow-card)]"
       >
         {HAZARDS.map((hazard) => {
-          const selected = active === hazard.id;
           const planned = hazard.support === "planned";
+          const selected = !planned && active.id === hazard.id;
           return (
             <button
               key={hazard.id}
               type="button"
-              aria-pressed={hazard.support === "layer" ? selected : undefined}
+              aria-pressed={planned ? undefined : selected}
               aria-disabled={planned || undefined}
-              aria-label={`${hazard.label}: ${SUPPORT_LABEL[hazard.support]}`}
-              title={`${hazard.label} · ${SUPPORT_LABEL[hazard.support]}`}
+              title={planned ? `${hazard.label} · Planned` : hazard.label}
               onClick={() => {
+                if (planned) {
+                  setPlannedNote((v) => !v);
+                  return;
+                }
+                setPlannedNote(false);
+                setKeyOpen(true);
                 if (hazard.overlay) onOverlayChange(hazard.overlay);
-                // Every lens explains itself on click, so nothing depends on hover.
-                setNoteFor((current) =>
-                  current === hazard.id && !hazard.overlay ? null : hazard.id,
-                );
               }}
               className={cx(
                 "flex shrink-0 items-center gap-1.5 rounded-[9px] border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
@@ -148,99 +129,84 @@ export function HazardToolbar({
             >
               <Icon name={hazard.icon} />
               <span className="hidden sm:inline">{hazard.label}</span>
-              {hazard.support !== "layer" ? (
-                <span
-                  className={cx(
-                    "hidden rounded-full px-1.5 py-px text-[11px] font-semibold uppercase tracking-[0.04em] md:inline",
-                    planned ? "bg-neutral-soft text-ink-3" : "bg-caution-soft text-caution",
-                  )}
-                >
-                  {SUPPORT_LABEL[hazard.support]}
+              {planned ? (
+                <span className="hidden rounded-full bg-neutral-soft px-1.5 py-px text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-3 md:inline">
+                  Planned
                 </span>
               ) : null}
             </button>
           );
         })}
-
-        <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-hairline" />
-
-        <div ref={layersRef} className="relative shrink-0">
-          <button
-            type="button"
-            aria-expanded={layersOpen}
-            aria-haspopup="true"
-            onClick={() => setLayersOpen((v) => !v)}
-            className={cx(
-              "flex items-center gap-1.5 rounded-[9px] border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
-              layersOpen
-                ? "border-accent-line bg-accent-soft text-accent"
-                : "border-transparent text-ink-2 hover:bg-surface-2 hover:text-ink",
-            )}
-          >
-            <Icon name="layers" />
-            <span className="hidden sm:inline">{OVERLAY_LABELS[overlay]}</span>
-            <span className="sr-only sm:hidden">Layers</span>
-          </button>
-        </div>
       </div>
 
-      {layersOpen ? (
-        <fieldset ref={layersMenuRef} className="w-[min(260px,calc(100vw-2rem))] rounded-[12px] border border-hairline bg-surface p-2 shadow-[var(--shadow-lift)]">
-          <legend className="sr-only">Viewport overlay</legend>
-          <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">
-            Viewport overlay
-          </p>
-          {VIEW_OVERLAYS.map((option) => (
-            <label
-              key={option}
-              className={cx(
-                "flex cursor-pointer items-center gap-2 rounded-[8px] px-2 py-1.5 text-[12.5px] text-ink-2 hover:bg-surface-2",
-                option === overlay && "bg-accent-soft text-accent",
-              )}
-            >
-              <input
-                type="radio"
-                name="viewport-overlay"
-                value={option}
-                checked={option === overlay}
-                onChange={() => {
-                  onOverlayChange(option);
-                  setNoteFor(null);
-                  setLayersOpen(false);
-                }}
-                className="accent-[var(--accent)]"
-              />
-              {OVERLAY_LABELS[option]}
-            </label>
-          ))}
-          <p className="px-2 pt-1.5 text-[11px] leading-relaxed text-ink-3">
-            Interventions switches to After and draws this run&rsquo;s applied
-            changes at illustrative positions; the simulator applies them city-wide.
-          </p>
-        </fieldset>
-      ) : noteHazard ? (
+      {plannedNote ? (
+        <p className="w-[min(360px,calc(100vw-2rem))] rounded-[12px] border border-hairline bg-surface/95 p-3 text-[11.5px] leading-relaxed text-ink-2 shadow-[var(--shadow-card)]">
+          {HAZARDS.find((h) => h.support === "planned")?.note}
+        </p>
+      ) : (
         <div className="w-[min(360px,calc(100vw-2rem))] rounded-[12px] border border-hairline bg-surface/95 p-3 shadow-[var(--shadow-card)]">
-          <div className="flex items-start gap-2">
+          <div className="flex items-center gap-2">
             <p className="text-[12px] font-semibold text-ink">
-              {noteHazard.label}
+              {active.label}
               <span className="ml-2 text-[11px] font-medium text-ink-3">
-                {SUPPORT_LABEL[noteHazard.support]}
+                {state === "after" ? "After: with changes" : "Before: no changes"}
               </span>
             </p>
             <button
               type="button"
-              onClick={() => setNoteFor(null)}
-              aria-label="Dismiss note"
-              className="-m-1 ml-auto rounded-[6px] p-1 text-ink-3 hover:text-ink"
+              onClick={() => setKeyOpen((v) => !v)}
+              aria-expanded={keyOpen}
+              className="ml-auto rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold text-accent hover:bg-accent-soft"
             >
-              <Icon name="close" className="size-3.5" />
+              {keyOpen ? "Hide key" : "Show key"}
             </button>
           </div>
-          <p className="mt-1 text-[11.5px] leading-relaxed text-ink-2">{noteHazard.note}</p>
-          {noteHazard.id === "heat" && active === "heat" ? <HeatLegend /> : null}
-          {noteHazard.id === "mobility" && active === "mobility" ? <BehaviorKey /> : null}
+          {keyOpen ? (
+            <>
+              <p className="mt-1 text-[11.5px] leading-relaxed text-ink-2">{active.note}</p>
+              {active.id === "heat" ? <HeatLegend /> : null}
+              {active.id === "mobility" ? <BehaviorKey /> : null}
+              {active.id === "flood" ? <FloodKey /> : null}
+              {drawn.length > 0 ? (
+                <div className="mt-2 border-t border-hairline pt-2">
+                  <p className="text-[11px] font-semibold text-ink">Changes drawn in this After view</p>
+                  <ul className="mt-1 space-y-1">
+                    {drawn.map((key) => (
+                      <li key={key} className="flex items-center gap-2 text-[11px] text-ink-2">
+                        <span
+                          aria-hidden
+                          className="h-2.5 w-4 shrink-0 rounded-[3px] border border-hairline"
+                          style={{ background: INTERVENTION_KEY[key].swatch }}
+                        />
+                        <span>
+                          <span className="font-medium text-ink">{INTERVENTION_KEY[key].label}</span>:{" "}
+                          {INTERVENTION_KEY[key].what}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1 text-[11px] text-ink-3">
+                    Positions are illustrative; the simulator applies each change city-wide.
+                  </p>
+                </div>
+              ) : state === "before" && applied.length > 0 ? (
+                <p className="mt-2 border-t border-hairline pt-2 text-[11px] text-ink-3">
+                  Switch to After to see this run&rsquo;s changes drawn in the city.
+                </p>
+              ) : null}
+            </>
+          ) : null}
         </div>
-      ) : null}
+      )}
+    </div>
+  );
+}
+
+function FloodKey() {
+  return (
+    <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-2">
+      <span aria-hidden className="h-2.5 w-6 shrink-0 rounded-[3px]" style={{ background: "rgb(15 64 107)" }} />
+      Deeper, wider water = higher flood risk in this arm
     </div>
   );
 }

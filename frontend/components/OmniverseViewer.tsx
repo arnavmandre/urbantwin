@@ -45,6 +45,7 @@ export function OmniverseViewer({
   state,
   onStateChange,
   hasAfter,
+  applied,
   onStatusChange,
   topRight,
   bottomInset = 0,
@@ -55,6 +56,8 @@ export function OmniverseViewer({
   state: RunState;
   onStateChange: (state: RunState) => void;
   hasAfter: boolean;
+  /** Intervention parameters the run applied; listed in the lens key when After is shown. */
+  applied: string[];
   /** Reports the real connection state, so chrome elsewhere never guesses. */
   onStatusChange?: (status: ViewerState["status"]) => void;
   /** Rendered at the end of the top-right control cluster. */
@@ -288,6 +291,8 @@ export function OmniverseViewer({
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start justify-between gap-2 p-3 sm:p-4">
         <HazardToolbar
           overlay={overlay}
+          state={state}
+          applied={applied}
           onOverlayChange={(next) => {
             setOverlay(next);
             void sendCommand({ state, camera, overlay: next, playback });

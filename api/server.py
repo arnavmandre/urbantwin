@@ -82,6 +82,7 @@ def create_app(root, manager=None, *, host="127.0.0.1", port=0):
                         {
                             "source": "live",
                             "active_run_id": manager.list_active(),
+                            "latest_run_id": manager.latest_completed(),
                         },
                     )
                     return

@@ -430,5 +430,34 @@ class RunManagerTests(unittest.TestCase):
                 self.assertFalse(report.exists())
 
 
+
+class RunsOnDiskTests(unittest.TestCase):
+    """Completed runs survive an API restart: they reload from data/runs/<id>/."""
+
+    def _write(self, root: Path, run_id: str, created: str, status: str = "complete") -> None:
+        run_dir = root / "data" / "runs" / run_id
+        run_dir.mkdir(parents=True)
+        (run_dir / "manifest.json").write_text(json.dumps(
+            {"run_id": run_id, "status": status, "city": "pune", "created_utc": created,
+             "scenario": {"temperature": 40, "humidity": 80, "rainfall": 80, "population": 100000}}))
+        report = json.loads((Path(__file__).resolve().parents[1] / "Simulation" / "urbantwin_demo_output.json")
+                            .read_text(encoding="utf-8"))
+        (run_dir / "simulation_report.json").write_text(json.dumps(report))
+
+    def test_latest_completed_run_reloads_after_restart(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write(root, "run_20260101_000001", "2026-01-01T00:00:01+00:00")
+            self._write(root, "run_20260101_000002", "2026-01-01T00:00:02+00:00")
+            self._write(root, "run_20260101_000003", "2026-01-01T00:00:03+00:00", status="failed")
+            manager = RunManager(root, pipeline_fn=lambda config: None)
+            self.assertEqual(manager.latest_completed(), "run_20260101_000002")
+            summary = manager.get_run("run_20260101_000002")
+            self.assertEqual(summary["status"], "complete")
+            self.assertIsNotNone(manager.get_report("run_20260101_000002"))
+            self.assertIsNone(manager.get_run("run_20260101_000003"))
+            self.assertIsNone(manager.get_run("../outside"))
+
+
 if __name__ == "__main__":
     unittest.main()

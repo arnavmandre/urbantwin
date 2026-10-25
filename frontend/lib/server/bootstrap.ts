@@ -88,9 +88,12 @@ async function loadData(runId?: string): Promise<Omit<Bootstrap, "analyticsUrl">
       get<ModelCard>("/api/model-card"),
       get<StreamConfig>("/api/stream/config"),
     ]);
-    // An unknown or expired run id (the API keeps runs in memory) is not a backend outage.
-    const run = runId
-      ? await get<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`).catch((error: unknown) => {
+    // An unknown run id is not a backend outage (404 -> no run).
+    // No ?run=: open the newest completed run, the one the published 3D view is showing.
+    const wanted =
+      runId ?? (await get<{ latest_run_id?: string | null }>("/api/runs")).latest_run_id ?? undefined;
+    const run = wanted
+      ? await get<RunSummary>(`/api/runs/${encodeURIComponent(wanted)}`).catch((error: unknown) => {
           if ((error as { status?: number }).status === 404) return null;
           throw error;
         })

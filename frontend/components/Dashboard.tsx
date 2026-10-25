@@ -182,6 +182,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
             state={shown}
             onStateChange={setState}
             hasAfter={hasAfter}
+            applied={Object.keys(run?.intervention ?? {})}
             onStatusChange={setViewerStatus}
             bottomInset={peekHeight}
             topRight={
