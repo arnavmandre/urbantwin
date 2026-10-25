@@ -145,6 +145,10 @@ Only claim what the code does when executed. Verified as of this writing:
   citizens are survey-calibrated, not Pune residents; facades are appearance.
   Live streaming of Pune was not exercised end to end (stage + handler targets
   were checked with pxr; the 400 m view was opened in desktop Kit).
+- ✅ Pune Heat lens: a per-run 3D heat map (`cities/pune/pune_view.py` `heat_ribbons`) colours each walked
+  street by the mean simulated heat exposure of the citizens on it, Before and After on one fixed scale.
+  It is route-pooled exposure, NOT a measured or modelled surface temperature. Mobility/Heat switching
+  needs the Kit-repo `view_commands` change (hide `/World/Routes` for `behavior`/`shade`).
 - ✅ `integration/export_snapshot.py` closes the loop: simulator report ->
   canonical v1 snapshot -> USD. 12/12 integration tests pass, agents land within
   1mm of their route geometry, snapshots are `data_kind: simulation`.

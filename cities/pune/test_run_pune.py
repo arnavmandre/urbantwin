@@ -94,5 +94,30 @@ class CameraGeometryTests(unittest.TestCase):
         self.assertGreater(pune_view.frame_leaks(empty, np.array([0.0, 150.0, 2.0]), outward, half, vhalf), 0)
 
 
+class HeatMapTests(unittest.TestCase):
+    """Per-run heat map behind the Heat lens (pune_view.street_heat / clip_segment / heat_colour)."""
+
+    def test_shared_street_pools_the_citizens_who_walked_it(self):
+        import pune_view
+        polylines = {"R1": [[0, 0], [10, 0], [10, 10]], "R2": [[10, 0], [0, 0]]}
+        citizens = [{"route": "R1", "heat_exposure": 60.0}, {"route": "R2", "heat_exposure": 40.0},
+                    {"route": "missing", "heat_exposure": 99.0}]
+        heat = pune_view.street_heat(citizens, polylines)
+        self.assertEqual(heat[((0.0, 0.0), (10.0, 0.0))], (50.0, 2))  # both directions, one street
+        self.assertEqual(heat[((10.0, 0.0), (10.0, 10.0))], (60.0, 1))
+        self.assertEqual(len(heat), 2)
+
+    def test_segments_are_clipped_to_the_square(self):
+        import pune_view
+        self.assertEqual(pune_view.clip_segment((0, 0), (300, 0), 199), ((0.0, 0.0), (199.0, 0.0)))
+        self.assertIsNone(pune_view.clip_segment((250, 0), (300, 50), 199))
+
+    def test_ramp_runs_cool_to_hot(self):
+        import pune_view
+        cool, hot = pune_view.heat_colour(0.0), pune_view.heat_colour(1.0)
+        self.assertGreater(cool[2], cool[0])  # blue end
+        self.assertGreater(hot[0], hot[2])    # red end
+
+
 if __name__ == "__main__":
     unittest.main()

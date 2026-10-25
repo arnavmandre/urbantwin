@@ -465,6 +465,83 @@ def place_camera(obstacle_set, walkers, target, shot, keep_inside):
     return best[0], tuple(map(float, best[1])), tuple(map(float, aim)), focal
 
 
+# Heat map colours: heat exposure (simulator, 0-100) on one fixed scale for both arms and every run, so colours
+# compare honestly. Stops copy HEAT_RAMP in frontend/components/HazardToolbar.tsx (same legend).
+HEAT_SCALE = (20.0, 80.0)
+HEAT_RAMP = ((0.0, (37, 99, 235)), (0.35, (6, 182, 212)), (0.65, (250, 204, 21)), (1.0, (220, 38, 38)))
+HEAT_BINS, HEAT_WIDTH_M = 8, 3.0
+
+
+def heat_colour(t):
+    """Linear RGB 0-1 on HEAT_RAMP at t in [0, 1]."""
+    t = min(1.0, max(0.0, t))
+    for (t0, c0), (t1, c1) in zip(HEAT_RAMP, HEAT_RAMP[1:]):
+        if t <= t1:
+            f = (t - t0) / (t1 - t0)
+            return tuple((a + (b - a) * f) / 255.0 for a, b in zip(c0, c1))
+    return tuple(v / 255.0 for v in HEAT_RAMP[-1][1])
+
+
+def street_heat(citizens, polylines):
+    """{segment: (mean heat exposure, citizens)} over the street segments of each citizen's chosen route.
+    Routes share node coordinates, so a street walked by several routes pools their citizens."""
+    acc = {}
+    for c in citizens:
+        poly = polylines.get(c["route"])
+        if not poly:
+            continue
+        for a, b in zip(poly, poly[1:]):
+            key = tuple(sorted(((round(a[0], 2), round(a[1], 2)), (round(b[0], 2), round(b[1], 2)))))
+            total = acc.setdefault(key, [0.0, 0])
+            total[0] += c["heat_exposure"]
+            total[1] += 1
+    return {k: (s / n, n) for k, (s, n) in acc.items()}
+
+
+def clip_segment(a, b, lim):
+    """Liang-Barsky clip of segment a-b to |x|, |y| <= lim; None if it lies outside."""
+    (ax, ay), (bx, by) = a, b
+    dx, dy = bx - ax, by - ay
+    t0, t1 = 0.0, 1.0
+    for p, q in ((-dx, ax + lim), (dx, lim - ax), (-dy, ay + lim), (dy, lim - ay)):
+        if p == 0:
+            if q < 0:
+                return None
+            continue
+        r = q / p
+        if p < 0:
+            t0 = max(t0, r)
+        else:
+            t1 = min(t1, r)
+        if t0 > t1:
+            return None
+    return (ax + t0 * dx, ay + t0 * dy), (ax + t1 * dx, ay + t1 * dy)
+
+
+def heat_ribbons(stage, root, seg_heat, mats):
+    """Flat ribbons over the streets in the view, one mesh per colour bin (hotter bins drawn on top)."""
+    lo, hi = HEAT_SCALE
+    bins = [[] for _ in range(HEAT_BINS)]
+    for (a, b), (h, _) in seg_heat.items():
+        seg = clip_segment(a, b, HALF - 1.0)
+        if seg:
+            bins[min(HEAT_BINS - 1, max(0, int((h - lo) / (hi - lo) * HEAT_BINS)))].append(seg)
+    for i, segs in enumerate(bins):
+        pts, faces = [], []
+        z = 0.12 + 0.01 * i
+        for (ax, ay), (bx, by) in segs:
+            length = math.hypot(bx - ax, by - ay)
+            if length < 0.05:
+                continue
+            nx, ny = -(by - ay) / length * HEAT_WIDTH_M / 2, (bx - ax) / length * HEAT_WIDTH_M / 2
+            k = len(pts)
+            pts += [(ax + nx, ay + ny, z), (ax - nx, ay - ny, z), (bx - nx, by - ny, z), (bx + nx, by + ny, z)]
+            faces.append([k, k + 1, k + 2, k + 3])
+        if faces:
+            pune_sim.part(stage, f"{root}/Bin{i}", pts, faces, heat_colour((i + 0.5) / HEAT_BINS), mats[i])
+    return {"segments_per_bin": [len(b) for b in bins], "scale": list(HEAT_SCALE)}
+
+
 ZONE_RE = re.compile(r"^Zone ([ABC])([123])$")
 
 
@@ -500,6 +577,16 @@ def write_run_layer(agents_dir, report, out_path):
         return {"total": len(p), "visible_per_frame_mean": round(float(np.mean(seen)), 1),
                 "visible_per_frame_max": int(max(seen))}
 
+    # Heat map: streets coloured by the heat exposure of the citizens who walked them, one layer per arm.
+    # Hidden until Kit's "congestion" overlay (the dashboard's Heat lens) makes /World/Routes visible.
+    polylines = json.loads((HERE / "pune_routes.json").read_text(encoding="utf-8"))["polylines"]
+    # the ramp is sRGB (it matches the dashboard legend); USD material colours are linear
+    heat_mats = [pune_sim.preview_material(stage, f"/World/Looks/Heat{i}",
+                                           tuple(v ** 2.2 for v in heat_colour((i + 0.5) / HEAT_BINS)), 0.8)
+                 for i in range(HEAT_BINS)]
+    UsdGeom.Imageable(stage.DefinePrim("/World/Routes", "Xform")).CreateVisibilityAttr(UsdGeom.Tokens.invisible)
+    heat = {}
+
     vset = stage.GetPrimAtPath("/World").GetVariantSets().AddVariantSet("demoState")
     walker_positions, sources = {}, []
     for arm, variant in pune_sim.ARMS:
@@ -512,6 +599,8 @@ def write_run_layer(agents_dir, report, out_path):
         with vset.GetVariantEditContext():
             walkers = UsdGeom.PointInstancer(stage.OverridePrim("/World/Agents/Walkers"))
             visible[f"walkers_{arm}"] = mask(positions, walkers.CreateInvisibleIdsAttr(), 0.6)  # half a body (0.25 m) + one sample (0.33 m)
+            heat[arm] = heat_ribbons(stage, "/World/Routes/Heat", street_heat(report[arm]["citizens"], polylines),
+                                     heat_mats)
     vset.ClearVariantSelection()  # selection stays with main_live.usda / the Kit handler
 
     traffic = Usd.Stage.Open(str(HERE / "traffic.usdc"))
@@ -537,7 +626,7 @@ def write_run_layer(agents_dir, report, out_path):
         look_at_camera(stage, name, eye, aim, focal)
         cameras[name] = {"eye": [round(v, 1) for v in eye], "target": [round(v, 1) for v in aim]}
     root.Save()
-    return {"visible": visible, "problem_zone": zones[0] if zones else None, "cameras": cameras}
+    return {"visible": visible, "problem_zone": zones[0] if zones else None, "cameras": cameras, "heat": heat}
 
 
 def main():

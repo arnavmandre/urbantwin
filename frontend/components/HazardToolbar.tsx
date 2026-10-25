@@ -47,7 +47,7 @@ const HAZARDS: {
     icon: "heat",
     support: "layer",
     overlay: "congestion",
-    note: "Route ribbons coloured by heat exposure, without agents. The colours come from the packaged path_colors layer (phase9/recolor_paths.py) and are not regenerated for each run.",
+    note: "Streets coloured by the mean heat exposure of the citizens who walked them in this run, for the arm shown (Before or After), on one fixed scale so the two compare. Agents are hidden. Rebuilt for every run (cities/pune/pune_view.py).",
   },
   {
     id: "mobility",
@@ -72,9 +72,9 @@ const SUPPORT_LABEL = {
   planned: "Planned",
 } as const;
 
-/** Cool-to-hot ramp copied from RAMP in phase9/recolor_paths.py. */
+/** Cool-to-hot ramp; the same stops as HEAT_RAMP in cities/pune/pune_view.py, which colours the 3D streets. */
 const HEAT_RAMP =
-  "linear-gradient(90deg, rgb(140 184 217), rgb(217 224 179) 35%, rgb(242 166 64) 65%, rgb(191 26 31))";
+  "linear-gradient(90deg, rgb(37 99 235), rgb(6 182 212) 35%, rgb(250 204 21) 65%, rgb(220 38 38))";
 
 export function HazardToolbar({
   overlay,
@@ -245,10 +245,10 @@ function HeatLegend() {
     <div className="mt-2">
       <div className="h-2 w-full rounded-full" style={{ background: HEAT_RAMP }} />
       <div className="mt-1 flex justify-between text-[11px] text-ink-3">
-        <span>Calm</span>
-        <span>Noticeable</span>
-        <span>Bad</span>
-        <span>Critical</span>
+        <span>20</span>
+        <span>40</span>
+        <span>60</span>
+        <span>80 heat exposure</span>
       </div>
     </div>
   );
