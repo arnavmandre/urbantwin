@@ -88,6 +88,8 @@ export function HazardToolbar({
   const [noteFor, setNoteFor] = useState<HazardId | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const layersRef = useRef<HTMLDivElement>(null);
+  // The menu renders below the toolbar row, outside layersRef, so it needs its own ref for the outside check.
+  const layersMenuRef = useRef<HTMLFieldSetElement>(null);
 
   const active = HAZARDS.find((h) => h.overlay === overlay)?.id ?? null;
   const noteHazard = HAZARDS.find((h) => h.id === noteFor);
@@ -95,7 +97,8 @@ export function HazardToolbar({
   useEffect(() => {
     if (!layersOpen) return;
     const onPointer = (event: PointerEvent) => {
-      if (!layersRef.current?.contains(event.target as Node)) setLayersOpen(false);
+      const target = event.target as Node;
+      if (!layersRef.current?.contains(target) && !layersMenuRef.current?.contains(target)) setLayersOpen(false);
     };
     document.addEventListener("pointerdown", onPointer);
     return () => document.removeEventListener("pointerdown", onPointer);
@@ -182,7 +185,7 @@ export function HazardToolbar({
       </div>
 
       {layersOpen ? (
-        <fieldset className="w-[min(260px,calc(100vw-2rem))] rounded-[12px] border border-hairline bg-surface p-2 shadow-[var(--shadow-lift)]">
+        <fieldset ref={layersMenuRef} className="w-[min(260px,calc(100vw-2rem))] rounded-[12px] border border-hairline bg-surface p-2 shadow-[var(--shadow-lift)]">
           <legend className="sr-only">Viewport overlay</legend>
           <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">
             Viewport overlay
