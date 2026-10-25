@@ -22,7 +22,7 @@ import { Pill } from "@/components/ui/Pill";
 import { cx } from "@/lib/cx";
 import type { Bootstrap } from "@/lib/server/bootstrap";
 import { useRunner } from "@/lib/use-runner";
-import type { CityKey, RunState, RunSummary, ScenarioInput } from "@/lib/types";
+import type { CityKey, RecommendationId, RunState, RunSummary, ScenarioInput } from "@/lib/types";
 import type { ViewerState } from "@/lib/viewer";
 
 /**
@@ -126,7 +126,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
     (options?: {
       forceApply?: boolean;
       debugFail?: boolean;
-      selectedRecommendationIds?: import("@/lib/types").RecommendationId[];
+      selectedRecommendationIds?: RecommendationId[];
     }) => {
       const apply = options?.forceApply ?? applyInterventions;
       if (options?.forceApply) setApplyInterventions(true);
@@ -340,6 +340,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
                     runId={run.run_id}
                     busy={runner.active}
                     attemptStatus={runner.state.status}
+                    applied={appliedActions(run)}
                     onApply={(selectedRecommendationIds) =>
                       submit({ forceApply: true, selectedRecommendationIds })
                     }
@@ -421,6 +422,19 @@ function analyticsHref(base: string | null, run: RunSummary | null): string | nu
   return run?.source === "live" && run.status === "complete"
     ? `${url}&var-run=${encodeURIComponent(run.run_id)}`
     : url;
+}
+
+/** Simulator intervention parameters -> the advisor actions that set them (Simulation/main.py). */
+const ACTION_FOR_PARAMETER: Record<string, RecommendationId> = {
+  shade_boost: "increase_shade",
+  drainage_boost: "improve_drainage",
+  route_capacity_boost: "alternative_pedestrian_routes",
+};
+
+function appliedActions(run: RunSummary): RecommendationId[] {
+  return Object.keys(run.intervention ?? {})
+    .map((key) => ACTION_FOR_PARAMETER[key])
+    .filter((id): id is RecommendationId => Boolean(id));
 }
 
 function interventionLabel(run: RunSummary): string | null {

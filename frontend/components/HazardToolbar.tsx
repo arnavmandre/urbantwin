@@ -9,8 +9,9 @@ import { VIEW_OVERLAYS, type ViewOverlay } from "@/lib/types";
 
 export const OVERLAY_LABELS: Record<ViewOverlay, string> = {
   behavior: "Behavior",
-  congestion: "Routes only",
-  shade: "Shade canopy",
+  congestion: "Heat map",
+  shade: "Interventions (After)",
+  flood: "Flood (illustrative)",
   none: "City only",
 };
 
@@ -38,8 +39,9 @@ const HAZARDS: {
     id: "flood",
     label: "Flood",
     icon: "flood",
-    support: "metrics",
-    note: "No 3D flood layer exists in this scene. Rain impact is reported in Scenario impact; drainage is a metrics-only intervention.",
+    support: "layer",
+    overlay: "flood",
+    note: "Illustrative water over the streets. Depth and width scale with this run's flood-risk score, the same on every street (Pune has no elevation or per-street drainage data), so it shows how much water, not where it pools. Compare Before and After to see improved drainage.",
   },
   {
     id: "heat",
@@ -55,7 +57,7 @@ const HAZARDS: {
     icon: "mobility",
     support: "layer",
     overlay: "behavior",
-    note: "Agents coloured by behaviour, walking their routes from the last published run's before arm.",
+    note: "Agents coloured by behaviour for the arm shown. In After, the run's interventions are drawn too: shade sails, drains or extra footpaths, at illustrative positions (the simulator applies them city-wide).",
   },
   {
     id: "population",
@@ -209,8 +211,8 @@ export function HazardToolbar({
             </label>
           ))}
           <p className="px-2 pt-1.5 text-[11px] leading-relaxed text-ink-3">
-            Shade canopy switches Kit to the packaged Phase 8 Intervention
-            variant; it is not this run&rsquo;s proposal.
+            Interventions switches to After and draws this run&rsquo;s applied
+            changes at illustrative positions; the simulator applies them city-wide.
           </p>
         </fieldset>
       ) : noteHazard ? (

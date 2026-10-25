@@ -335,12 +335,12 @@ export function OmniverseViewer({
           </div>
           {topRight}
           {/* On Pune, Kit's demoState "Intervention" variant holds this run's
-              after-arm walkers and heat map (cities/pune/pune_view.py), but no
-              intervention geometry. Said whenever the 3D "After" is on screen. */}
+              after-arm walkers, heat map and the applied interventions at illustrative
+              positions (cities/pune/pune_view.py). Said whenever the 3D "After" is on screen. */}
           {connected && state === "after" ? (
             <p className="basis-full text-right">
               <span className="inline-block rounded-[8px] bg-surface/90 px-2 py-0.5 text-[11px] text-ink-3 shadow-[var(--shadow-card)] backdrop-blur">
-                3D &ldquo;After&rdquo; shows this run&rsquo;s re-simulated citizens; added shade or drainage is not drawn.
+                3D &ldquo;After&rdquo; shows this run&rsquo;s re-simulated citizens; added shade, drains or footpaths are drawn at illustrative positions.
               </span>
             </p>
           ) : null}

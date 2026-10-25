@@ -149,6 +149,9 @@ Only claim what the code does when executed. Verified as of this writing:
   street by the mean simulated heat exposure of the citizens on it, Before and After on one fixed scale.
   It is route-pooled exposure, NOT a measured or modelled surface temperature. Mobility/Heat switching
   needs the Kit-repo `view_commands` change (hide `/World/Routes` for `behavior`/`shade`).
+- ✅ Pune demo layers: After draws the run's applied interventions (shade sails, drains, footpaths) and the
+  Flood lens draws water scaled by the run's flood risk. Both are ILLUSTRATIVE: interventions apply
+  city-wide in the simulator and flood risk is uniform (no elevation); say so when showing them.
 - ✅ `integration/export_snapshot.py` closes the loop: simulator report ->
   canonical v1 snapshot -> USD. 12/12 integration tests pass, agents land within
   1mm of their route geometry, snapshots are `data_kind: simulation`.

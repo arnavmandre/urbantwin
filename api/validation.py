@@ -12,7 +12,7 @@ CONSTRAINTS = {
 
 VIEW_STATES = frozenset({"before", "after"})
 VIEW_CAMERAS = frozenset({"Overview", "Street", "ProblemZone", "Aerial"})
-VIEW_OVERLAYS = frozenset({"behavior", "congestion", "shade", "none"})
+VIEW_OVERLAYS = frozenset({"behavior", "congestion", "shade", "flood", "none"})
 VIEW_PLAYBACK = frozenset({"play", "pause", "restart"})
 
 DEFAULT_ANIMATION_FRAMES = 60

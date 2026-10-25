@@ -119,5 +119,34 @@ class HeatMapTests(unittest.TestCase):
         self.assertGreater(hot[0], hot[2])    # red end
 
 
+class DemoLayerTests(unittest.TestCase):
+    """Flood water and intervention props drawn per run (pune_view.flood_water / intervention_props)."""
+
+    def setUp(self):
+        from pxr import Usd
+        import pune_sim
+        import pune_view
+        self.v, self.stage = pune_view, Usd.Stage.CreateInMemory()
+        self.mats = {k: pune_sim.preview_material(self.stage, f"/Looks/{k}", c, r)
+                     for k, (c, r) in pune_view.LOOK_DEMO.items()}
+        self.segs = {((0.0, 0.0), (20.0, 0.0)), ((20.0, 0.0), (20.0, 20.0))}
+
+    def test_flood_depth_and_width_follow_flood_risk(self):
+        high = self.v.flood_water(self.stage, "/High", [{"flood_risk": 50.0}], self.segs, self.mats["water"])
+        low = self.v.flood_water(self.stage, "/Low", [{"flood_risk": 5.0}], self.segs, self.mats["water"])
+        self.assertAlmostEqual(high["depth_m"], 0.3)
+        self.assertEqual(high["width_m"], self.v.FLOOD_WIDTH_M)
+        self.assertLess(low["depth_m"], high["depth_m"])
+        self.assertLess(low["width_m"], high["width_m"])
+
+    def test_only_applied_interventions_are_drawn(self):
+        report = {"intervention": {"drainage_boost": 0.35}, "before": {"problem_routes": []}}
+        heat = {((0.0, 0.0), (20.0, 0.0)): (60.0, 3)}
+        drawn = self.v.intervention_props(self.stage, "/I", report, {}, heat, self.mats)
+        self.assertEqual(set(drawn), {"drain_segments"})
+        self.assertFalse(self.stage.GetPrimAtPath("/I/ShadeSails").IsValid())
+        self.assertEqual(self.v.intervention_props(self.stage, "/None", {"before": {}}, {}, heat, self.mats), {})
+
+
 if __name__ == "__main__":
     unittest.main()

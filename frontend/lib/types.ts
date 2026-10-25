@@ -354,7 +354,7 @@ export interface ModelCard {
 // --------------------------------------------------------------------------
 
 export const VIEW_CAMERAS = ["Overview", "Street", "ProblemZone", "Aerial"] as const;
-export const VIEW_OVERLAYS = ["behavior", "congestion", "shade", "none"] as const;
+export const VIEW_OVERLAYS = ["behavior", "congestion", "shade", "flood", "none"] as const;
 export const VIEW_PLAYBACK = ["play", "pause", "restart"] as const;
 
 export type ViewCamera = (typeof VIEW_CAMERAS)[number];

@@ -20,6 +20,9 @@ const ACTION_LABELS: Record<RecommendationId, string> = {
   no_major_intervention: "No major intervention",
 };
 
+/** The actions a re-run can combine; "no major intervention" is simply an empty plan. */
+const TESTABLE: RecommendationId[] = ["increase_shade", "improve_drainage", "alternative_pedestrian_routes"];
+
 const STARTERS = [
   "What is the biggest problem in this run?",
   "Why is the top problem zone flagged?",
@@ -35,12 +38,15 @@ export function AdvisorChat({
   runId,
   busy,
   attemptStatus,
+  applied,
   onApply,
 }: {
   runId: string;
   busy: boolean;
   /** Status of the latest run attempt, so a failed or cancelled re-run clears its pending comparison. */
   attemptStatus: string;
+  /** Actions the run on screen already applied; the test plan starts from them. */
+  applied: RecommendationId[];
   onApply: (ids: RecommendationId[]) => void;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -52,20 +58,27 @@ export function AdvisorChat({
   // Actions applied from this chat whose re-run has not reported back yet.
   const [pendingApply, setPendingApply] = useState<RecommendationId[] | null>(null);
   const [autoCompare, setAutoCompare] = useState<string | null>(null);
+  // Changes the next re-run will test together. Every re-run starts from the same baseline, so the plan
+  // starts from what this run already applied and the planner adds or removes from there.
+  const [plan, setPlan] = useState<RecommendationId[]>(() => applied.filter((id) => TESTABLE.includes(id)));
   const scroller = useRef<HTMLDivElement>(null);
 
   // A new run arrived: mark it in the thread (the backend injects its facts). If it is the re-run of
   // an action applied here, ask the advisor straight away what changed.
   if (seenRun !== runId) {
     setSeenRun(runId);
+    setPlan(applied.filter((id) => TESTABLE.includes(id)));
     if (pendingApply) {
       const applied = pendingApply.map((id) => ACTION_LABELS[id]).join(" + ");
       setPendingApply(null);
       setMessages((prev) => [...prev, { role: "note", text: `Re-run ${runId} with ${applied} finished.` }]);
+      // Without an earlier conversation the advisor never saw the previous run, so only the baseline compares.
+      const against = sessionId
+        ? "compared with the previous run and with this run's own baseline (before arm)"
+        : "compared with this run's own baseline (before arm)";
       setAutoCompare(
-        `I applied ${applied} and the re-run finished. What improved and what got worse, compared with the ` +
-          "previous run and with this run's own baseline (before arm)? Use the numbers, and say whether you " +
-          "would keep it.",
+        `I applied ${applied} and the re-run finished. What improved and what got worse, ${against}? ` +
+          "Use the numbers, and say whether you would keep it.",
       );
     } else if (messages.length > 0) {
       setMessages((prev) => [
@@ -130,6 +143,14 @@ export function AdvisorChat({
     [onApply],
   );
 
+  const togglePlan = useCallback((id: RecommendationId) => {
+    // keep the canonical order so the button label reads the same however it was built
+    setPlan((current) => TESTABLE.filter((x) => (x === id ? !current.includes(x) : current.includes(x))));
+  }, []);
+  const planLabel = plan.map((id) => ACTION_LABELS[id]).join(" + ");
+  const planIsCurrent =
+    plan.length === applied.length && plan.every((id) => applied.includes(id));
+
   return (
     <Card>
       <CardHeader
@@ -172,7 +193,7 @@ export function AdvisorChat({
               </p>
             </div>
           ) : (
-            <AdvisorTurn key={index} response={message.response} busy={busy} onApply={apply} />
+            <AdvisorTurn key={index} response={message.response} plan={plan} onToggle={togglePlan} />
           ),
         )}
 
@@ -189,6 +210,53 @@ export function AdvisorChat({
           {error}
         </p>
       ) : null}
+
+      <section
+        aria-label="Test plan"
+        className="mt-3 rounded-[12px] border border-accent-line bg-accent-soft p-3"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="mr-1 text-[12px] font-semibold text-ink">Test plan</p>
+          {TESTABLE.map((id) => {
+            const on = plan.includes(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={on}
+                disabled={busy}
+                onClick={() => togglePlan(id)}
+                className={cx(
+                  "rounded-full border px-3 py-1 text-[12px] font-medium transition-colors disabled:opacity-50",
+                  on
+                    ? "border-accent bg-accent text-accent-ink"
+                    : "border-hairline bg-surface text-ink-2 hover:text-ink",
+                )}
+              >
+                {on ? "\u2713 " : "+ "}
+                {ACTION_LABELS[id]}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={busy || plan.length === 0 || planIsCurrent}
+            onClick={() => apply(plan)}
+            className="rounded-[10px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {plan.length === 0 ? "Pick changes to test" : `Re-run with ${planLabel}`}
+          </button>
+          <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-ink-2">
+            {busy
+              ? "A run is in progress."
+              : planIsCurrent && plan.length > 0
+                ? "This run already tests exactly these changes. Add or remove one to compare."
+                : "Same citizens and weather as this run; only the selected changes differ. The advisor reports what changed when it finishes."}
+          </p>
+        </div>
+      </section>
 
       <form
         className="mt-3 flex items-end gap-2"
@@ -230,12 +298,12 @@ export function AdvisorChat({
 
 function AdvisorTurn({
   response,
-  busy,
-  onApply,
+  plan,
+  onToggle,
 }: {
   response: AdvisorChatResponse;
-  busy: boolean;
-  onApply: (ids: RecommendationId[]) => void;
+  plan: RecommendationId[];
+  onToggle: (id: RecommendationId) => void;
 }) {
   const fallback = response.source !== "agent37";
   return (
@@ -262,14 +330,23 @@ function AdvisorTurn({
             </p>
             {proposal.reason ? <p className="text-[11px] text-ink-2">{proposal.reason}</p> : null}
           </div>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onApply([proposal.action])}
-            className="shrink-0 rounded-[10px] bg-accent px-3 py-1.5 text-[12px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Apply &amp; re-run
-          </button>
+          {TESTABLE.includes(proposal.action) ? (
+            <button
+              type="button"
+              aria-pressed={plan.includes(proposal.action)}
+              onClick={() => onToggle(proposal.action)}
+              className={cx(
+                "shrink-0 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-colors",
+                plan.includes(proposal.action)
+                  ? "border border-accent bg-surface text-accent"
+                  : "bg-accent text-accent-ink hover:bg-accent-hover",
+              )}
+            >
+              {plan.includes(proposal.action) ? "\u2713 In test plan" : "Add to test plan"}
+            </button>
+          ) : (
+            <span className="shrink-0 text-[11px] text-ink-3">Nothing to re-run</span>
+          )}
         </div>
       ))}
     </div>

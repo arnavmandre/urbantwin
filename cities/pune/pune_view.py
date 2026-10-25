@@ -542,6 +542,118 @@ def heat_ribbons(stage, root, seg_heat, mats):
     return {"segments_per_bin": [len(b) for b in bins], "scale": list(HEAT_SCALE)}
 
 
+# ---------- demo layers: flood water and intervention props (illustrative placement) ----------
+FLOOD_DEPTH_M_AT_100 = 0.6   # water depth drawn for a flood-risk score of 100 (linear)
+FLOOD_WIDTH_M = 7.0          # full carriageway; reached at FLOOD_FULL_WIDTH_RISK, narrower (gutters) below it
+FLOOD_FULL_WIDTH_RISK = 25.0
+LOOK_DEMO = {"water": ((0.06, 0.25, 0.42), 0.05), "canopy": ((0.92, 0.88, 0.78), 0.7),
+             "pole": ((0.25, 0.25, 0.27), 0.5), "drain": ((0.10, 0.13, 0.18), 0.6),
+             "altroute": ((0.55, 0.20, 0.85), 0.6)}
+
+
+def network_segments(polylines):
+    """Unique street segments of the whole route network (every route, walked or not)."""
+    segs = set()
+    for poly in polylines.values():
+        for a, b in zip(poly, poly[1:]):
+            segs.add(tuple(sorted(((round(a[0], 2), round(a[1], 2)), (round(b[0], 2), round(b[1], 2))))))
+    return segs
+
+
+def strip_mesh(segs, width, z, offset=0.0):
+    """Flat quads along segments, optionally shifted sideways by offset; returns (points, faces)."""
+    pts, faces = [], []
+    for (ax, ay), (bx, by) in segs:
+        length = math.hypot(bx - ax, by - ay)
+        if length < 0.05:
+            continue
+        ux, uy = -(by - ay) / length, (bx - ax) / length  # left normal
+        ox, oy = ux * offset, uy * offset
+        nx, ny = ux * width / 2, uy * width / 2
+        k = len(pts)
+        pts += [(ax + ox + nx, ay + oy + ny, z), (ax + ox - nx, ay + oy - ny, z),
+                (bx + ox - nx, by + oy - ny, z), (bx + ox + nx, by + oy + ny, z)]
+        faces.append([k, k + 1, k + 2, k + 3])
+    return pts, faces
+
+
+def clipped(segs, margin=1.0):
+    return [c for c in (clip_segment(a, b, HALF - margin) for a, b in segs) if c]
+
+
+def box(cx, cy, half, z0, z1):
+    return pune_sim.prism([(cx - half, cy - half), (cx + half, cy - half),
+                           (cx + half, cy + half), (cx - half, cy + half)], z0, z1)
+
+
+def merge(meshes):
+    pts, faces = [], []
+    for mp, mf in meshes:
+        k = len(pts)
+        pts += mp
+        faces += [[i + k for i in f] for f in mf]
+    return pts, faces
+
+
+def flood_water(stage, root, citizens, segs, mat):
+    """Uniform water over the street network, depth from this arm's mean citizen flood risk. The simulator gives
+    Pune one flood risk for every route (no per-street drainage, no elevation), so depth is the same everywhere."""
+    risk = float(np.mean([c["flood_risk"] for c in citizens])) if citizens else 0.0
+    depth = max(0.02, FLOOD_DEPTH_M_AT_100 * risk / 100.0)
+    width = FLOOD_WIDTH_M * min(1.0, max(0.1, risk / FLOOD_FULL_WIDTH_RISK))
+    pts, faces = strip_mesh(clipped(segs), width, depth)
+    if faces:
+        pune_sim.part(stage, f"{root}/Water", pts, faces, LOOK_DEMO["water"][0], mat)
+    return {"flood_risk": round(risk, 1), "depth_m": round(depth, 3), "width_m": round(width, 2), "segments": len(faces)}
+
+
+def intervention_props(stage, root, report, polylines, seg_heat_before, mats):
+    """3D props for the interventions this run applied, drawn in the After arm. The simulator applies each one
+    city-wide, so placement is illustrative: shade sails over the hottest walked streets, drain channels along
+    the walked streets' kerbs, extra footpaths beside the most congested routes."""
+    applied = report.get("intervention") or {}
+    drawn = {}
+    if applied.get("shade_boost"):
+        poles, sails = [], []
+        for (a, b), _ in sorted(seg_heat_before.items(), key=lambda kv: -kv[1][0]):
+            seg = clip_segment(a, b, HALF - 4.0)
+            if not seg or len(sails) >= 140:
+                continue
+            (ax, ay), (bx, by) = seg
+            length = math.hypot(bx - ax, by - ay)
+            if length < 6:
+                continue
+            ux, uy = -(by - ay) / length, (bx - ax) / length
+            for t in np.arange(7.0 / length, 1.0, 14.0 / length):  # one sail every 14 m, over the pavement
+                if len(sails) >= 140:
+                    break
+                cx, cy = ax + (bx - ax) * t + ux * 4.5, ay + (by - ay) * t + uy * 4.5
+                poles.append(box(cx, cy, 0.08, 0.0, 3.4))
+                sails.append(box(cx, cy, 1.6, 3.4, 3.5))
+        if sails:
+            pp, pf = merge(poles)
+            sp, sf = merge(sails)
+            pune_sim.part(stage, f"{root}/ShadeSails/Poles", pp, pf, LOOK_DEMO["pole"][0], mats["pole"])
+            pune_sim.part(stage, f"{root}/ShadeSails/Sails", sp, sf, LOOK_DEMO["canopy"][0], mats["canopy"])
+        drawn["shade_sails"] = len(sails)
+    if applied.get("drainage_boost"):
+        walked = clipped(list(seg_heat_before), 3.0)
+        pts, faces = merge([strip_mesh(walked, 0.35, 0.14, side) for side in (-3.3, 3.3)])
+        if faces:
+            pune_sim.part(stage, f"{root}/Drains", pts, faces, LOOK_DEMO["drain"][0], mats["drain"])
+        drawn["drain_segments"] = len(faces)
+    if applied.get("route_capacity_boost"):
+        segs = set()
+        for pr in report["before"].get("problem_routes", []):
+            poly = polylines.get(pr["id"]) or []
+            segs.update(zip(map(tuple, poly), map(tuple, poly[1:])))
+        pts, faces = strip_mesh(clipped(segs, 3.0), 2.0, 0.16, 5.0)
+        if faces:
+            pune_sim.part(stage, f"{root}/AlternativeFootpaths", pts, faces, LOOK_DEMO["altroute"][0], mats["altroute"])
+        drawn["footpath_segments"] = len(faces)
+    return drawn
+
+
 ZONE_RE = re.compile(r"^Zone ([ABC])([123])$")
 
 
@@ -586,6 +698,14 @@ def write_run_layer(agents_dir, report, out_path):
                  for i in range(HEAT_BINS)]
     UsdGeom.Imageable(stage.DefinePrim("/World/Routes", "Xform")).CreateVisibilityAttr(UsdGeom.Tokens.invisible)
     heat = {}
+    # Demo layers. Flood: hidden until Kit's "flood" overlay. Interventions: After arm only, the run's own actions.
+    demo_mats = {k: pune_sim.preview_material(stage, f"/World/Looks/Demo_{k}", tuple(v ** 2.2 for v in c), r)
+                 for k, (c, r) in LOOK_DEMO.items()}
+    UsdShade.Shader(stage.GetPrimAtPath("/World/Looks/Demo_water/PreviewSurface")).CreateInput(
+        "opacity", Sdf.ValueTypeNames.Float).Set(0.72)
+    UsdGeom.Imageable(stage.DefinePrim("/World/Flood", "Xform")).CreateVisibilityAttr(UsdGeom.Tokens.invisible)
+    network = network_segments(polylines)
+    flood, props = {}, {}
 
     vset = stage.GetPrimAtPath("/World").GetVariantSets().AddVariantSet("demoState")
     walker_positions, sources = {}, []
@@ -601,6 +721,10 @@ def write_run_layer(agents_dir, report, out_path):
             visible[f"walkers_{arm}"] = mask(positions, walkers.CreateInvisibleIdsAttr(), 0.6)  # half a body (0.25 m) + one sample (0.33 m)
             heat[arm] = heat_ribbons(stage, "/World/Routes/Heat", street_heat(report[arm]["citizens"], polylines),
                                      heat_mats)
+            flood[arm] = flood_water(stage, "/World/Flood", report[arm]["citizens"], network, demo_mats["water"])
+            if arm == "after":
+                props = intervention_props(stage, "/World/Interventions", report, polylines,
+                                           street_heat(report["before"]["citizens"], polylines), demo_mats)
     vset.ClearVariantSelection()  # selection stays with main_live.usda / the Kit handler
 
     traffic = Usd.Stage.Open(str(HERE / "traffic.usdc"))
@@ -626,7 +750,8 @@ def write_run_layer(agents_dir, report, out_path):
         look_at_camera(stage, name, eye, aim, focal)
         cameras[name] = {"eye": [round(v, 1) for v in eye], "target": [round(v, 1) for v in aim]}
     root.Save()
-    return {"visible": visible, "problem_zone": zones[0] if zones else None, "cameras": cameras, "heat": heat}
+    return {"visible": visible, "problem_zone": zones[0] if zones else None, "cameras": cameras, "heat": heat,
+            "flood": flood, "interventions": props}
 
 
 def main():
