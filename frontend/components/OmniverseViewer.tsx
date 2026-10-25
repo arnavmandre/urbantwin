@@ -299,7 +299,7 @@ export function OmniverseViewer({
           }}
         />
 
-        <div className="pointer-events-auto ml-auto flex flex-wrap items-center justify-end gap-2">
+        <div className="pointer-events-auto relative ml-auto flex flex-wrap items-center justify-end gap-2">
           <div className="flex items-center gap-2 rounded-[12px] border border-hairline bg-surface/95 p-1 pl-2 shadow-[var(--shadow-card)]">
             <StatusChip status={viewer.status} />
             <SegmentedControl
@@ -341,9 +341,10 @@ export function OmniverseViewer({
           {topRight}
           {/* On Pune, Kit's demoState "Intervention" variant holds this run's
               after-arm walkers, heat map and the applied interventions at illustrative
-              positions (cities/pune/pune_view.py). Said whenever the 3D "After" is on screen. */}
+              positions (cities/pune/pune_view.py). Said whenever the 3D "After" is on screen.
+              Absolutely placed under the controls so it never widens the group and pushes it to a new row. */}
           {connected && state === "after" ? (
-            <p className="basis-full text-right">
+            <p className="absolute right-0 top-full mt-2 w-max max-w-[min(560px,80vw)] text-right">
               <span className="inline-block rounded-[8px] bg-surface/90 px-2 py-0.5 text-[11px] text-ink-3 shadow-[var(--shadow-card)] backdrop-blur">
                 3D &ldquo;After&rdquo; shows this run&rsquo;s re-simulated citizens; added shade, drains or footpaths are drawn at illustrative positions.
               </span>
