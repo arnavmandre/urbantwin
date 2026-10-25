@@ -65,18 +65,18 @@ Leave this console open. Wait until you see `app ready` / `RTX ready` and **no**
 ```powershell
 cd C:\Users\arnav\Argus\.worktrees\pune-city\frontend
 $env:URBANTWIN_API_BASE = "http://127.0.0.1:8000"
-npm run dev
+npm run dev -- -p 3001   # 3001: Kit's Python debugger takes 127.0.0.1:3000
 ```
 
-### 4) Open Argus
+### 4) Open UrbanTwin AI
 
 In Chrome or Edge:
 
 ```text
-http://localhost:3000/
+http://127.0.0.1:3001/
 ```
 
-(If npm says port 3000 is busy, use the URL it prints, often `http://localhost:3001/`.)
+(Port 3001, not 3000: when Kit runs, its Python debugger binds 127.0.0.1:3000 and would answer instead of the dashboard.)
 
 Expect **Live backend** in the header. The Omniverse viewport should reach **Live** when Kit signaling is up (often 30–90s).
 
@@ -99,13 +99,13 @@ Full operator notes: [`docs/DEMO_RUNBOOK.md`](docs/DEMO_RUNBOOK.md).
 
 ## Optional: one-click launcher
 
-`Start-UrbanTwin.bat` / `tools/demo_launch.ps1` exist but are **not** the preferred path (Kit port conflicts are common). Prefer the manual steps above and open **http://localhost:3000/**.
+`Start-UrbanTwin.bat` / `tools/demo_launch.ps1` exist but are **not** the preferred path (Kit port conflicts are common). Prefer the manual steps above and open **http://127.0.0.1:3001/**.
 
 ### Mock-only dashboard (no API / no Kit)
 
 ```powershell
 cd C:\Users\arnav\Argus\.worktrees\pune-city\frontend
-npm run dev
+npm run dev -- -p 3001   # 3001: Kit's Python debugger takes 127.0.0.1:3000
 ```
 
 Without `URBANTWIN_API_BASE`, the UI replays fixtures and must not be presented as a live backend.

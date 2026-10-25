@@ -29,7 +29,7 @@ View commands are allow-listed by the API; **Kit must be running and the browser
 | Service | Port | Check |
 | --- | --- | --- |
 | Argus API | **8000** | `Invoke-RestMethod http://127.0.0.1:8000/api/health` |
-| Next.js dashboard | **3000** (or **3001** if busy) | Open **http://localhost:3000/** |
+| Next.js dashboard | **3001** (3000 is taken by Kit's Python debugger) | Open **http://127.0.0.1:3001/** |
 | Kit WebRTC signaling | **49100** | `GET /api/stream/config` → `status: "available"` when host is up |
 | Kit media (DIRECT) | **47998** | Advertised in stream config; firewall must allow local TCP |
 
@@ -49,13 +49,13 @@ cd C:\Users\arnav\omniverse\kit-app-template
 # 3) Frontend (separate shell)
 cd C:\Users\arnav\Argus\frontend
 $env:URBANTWIN_API_BASE = "http://127.0.0.1:8000"
-npm run dev
+npm run dev -- -p 3001   # 3001: Kit's Python debugger takes 127.0.0.1:3000
 ```
 
 Then open:
 
 ```text
-http://localhost:3000/
+http://127.0.0.1:3001/
 ```
 
 **Important:** streaming Kit uses `--no-window`. Success = Kit log shows `app ready` / `RTX ready` (no stream-server errors), `/api/stream/config` → `available`, viewport chip **Live** in Chrome/Edge.
@@ -69,7 +69,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/stream/config
 # expect status: "available" when Kit signaling is open, else honest "offline"
 ```
 
-Open **http://localhost:3000/** in Chrome or Edge.
+Open **http://127.0.0.1:3001/** in Chrome or Edge.
 
 ## Expected UI states
 
@@ -101,7 +101,7 @@ Checks: health, stream config, short live run, view allow-list, optional explain
 | Run stuck `running` | Pipeline error | `GET /api/runs/{id}` for status; see API window log |
 | View changes not in Kit | No WebRTC session | Connect stream first; relaunch Kit if API started after Kit |
 | `Failed to start the primary stream server` | Another Kit still holds port 49100 | Close all Kit consoles / `taskkill /F /IM kit.exe`; reopen browser tabs; restart Kit only once |
-| `npm run dev` EADDRINUSE | Port 3000 busy | Use URL shown (often `http://localhost:3001/`) |
+| `npm run dev -- -p 3001` EADDRINUSE | Port 3001 busy | Close the other dev server, or run `.\tools\demo_launch.ps1 -Force` |
 
 ## Related docs
 

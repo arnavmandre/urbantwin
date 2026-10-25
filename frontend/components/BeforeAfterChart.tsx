@@ -239,7 +239,7 @@ function AxisRow({ ticks, unit = "" }: { ticks: number[]; unit?: string }) {
         {ticks.map((tick) => (
           <span
             key={tick}
-            className="tabular absolute -translate-x-1/2 text-[10px] text-ink-4"
+            className="tabular absolute -translate-x-1/2 text-[11px] text-ink-4"
             style={{ left: `${(tick / max) * 100}%` }}
           >
             {tick}

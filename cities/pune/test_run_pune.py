@@ -64,9 +64,6 @@ class RunPuneTests(unittest.TestCase):
                               root=Path(tempfile.gettempdir()), publish=False)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class CameraGeometryTests(unittest.TestCase):
     """Sight-line test behind the per-run camera placement (pune_view.blocked)."""
@@ -82,3 +79,20 @@ class CameraGeometryTests(unittest.TestCase):
         self.assertFalse(pune_view.blocked((wall, no_trees), (0, 0, 2), (6.5, 0, 2)))
         tree = np.array([[9.0, -1.0, 0.0, 11.0, 1.0, 6.0]])
         self.assertTrue(pune_view.blocked((np.zeros((0, 3, 3)), tree), (0, 0, 2), (20, 0, 2)))
+
+    def test_frame_leaks_flags_a_view_of_the_void_past_the_square(self):
+        import math
+        import numpy as np
+        import pune_view
+        empty = (np.zeros((0, 3, 3)), np.zeros((0, 6)))
+        half = math.atan(pune_view.APERTURE_MM / 2 / 24)
+        vhalf = math.atan(pune_view.APERTURE_MM * 9 / 16 / 2 / 24)
+        down = np.array([0.0, 0.0, -1.0])
+        self.assertEqual(pune_view.frame_leaks(empty, np.array([0.0, 0.0, 300.0]), down + [0, 1e-3, 0], half, vhalf), 0)
+        outward = np.array([0.0, 1.0, -0.004])  # near-level: the centre ray lands ~500 m out, past the edge
+        outward /= np.linalg.norm(outward)
+        self.assertGreater(pune_view.frame_leaks(empty, np.array([0.0, 150.0, 2.0]), outward, half, vhalf), 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -32,5 +32,4 @@ if not "%ERR%"=="0" (
 )
 echo.
 pause
-endlocal
-exit /b %ERR%
+endlocal & exit /b %ERR%

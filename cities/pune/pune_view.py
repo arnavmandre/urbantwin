@@ -398,9 +398,28 @@ def blocked(obstacle_set, a, b, steps=48):
     return bool((ok & (u >= 0) & (v >= 0) & (u + v <= 1) & (w > 0) & (w < 1)).any())
 
 
+def frame_leaks(obstacle_set, eye, fwd, half_h, half_v):
+    """Rays across the upper frame and the horizon that hit the ground outside the square with no building in
+    between, i.e. where the unmodelled void would show. Rays at or above the horizon see sky and are fine."""
+    right = np.cross(fwd, (0.0, 0.0, 1.0))
+    right /= np.linalg.norm(right)
+    up = np.cross(right, fwd)
+    leaks = 0
+    for sy in (1.0, 0.5, 0.0, -0.3):
+        for sx in (-1.0, -0.5, 0.0, 0.5, 1.0):
+            r = fwd + math.tan(half_h) * sx * right + math.tan(half_v) * sy * up
+            if r[2] >= 0:
+                continue
+            hit = eye + r * (eye[2] / -r[2])
+            if max(abs(hit[0]), abs(hit[1])) > HALF and not blocked(obstacle_set, eye, hit):
+                leaks += 1
+    return leaks
+
+
 def place_camera(obstacle_set, walkers, target, shot, keep_inside):
-    """Best clear viewpoint around target for a SHOTS entry: scored by how many walkers it frames, weighted
-    by their on-screen size, among azimuths whose line of sight to the target is not blocked."""
+    """Best clear viewpoint around target for a SHOTS entry, as (rank, eye, aim, focal). Among azimuths whose
+    line of sight to the target is not blocked, rank = (rays showing the void past the square, -score), where
+    score counts the walkers it frames and can see, weighted by on-screen size and by how open the frame is."""
     dist, height, focal, aim_z = shot
     tx, ty = target
     aim = np.array([tx, ty, aim_z])
@@ -415,10 +434,6 @@ def place_camera(obstacle_set, walkers, target, shot, keep_inside):
             continue
         fwd = aim - eye
         fwd /= np.linalg.norm(fwd)
-        # look inward: the ground 40 m beyond the target must still be modelled, not the void past the square
-        flat = fwd[:2] / np.linalg.norm(fwd[:2])
-        if max(abs(tx + flat[0] * 40.0), abs(ty + flat[1] * 40.0)) > HALF:
-            continue
         rel = np.column_stack([walkers - eye[:2], np.full(len(walkers), PERSON_M / 2 - eye[2])])
         d = np.linalg.norm(rel, axis=1)
         yaw = np.arctan2(rel[:, 1], rel[:, 0]) - math.atan2(fwd[1], fwd[0])
@@ -441,10 +456,12 @@ def place_camera(obstacle_set, walkers, target, shot, keep_inside):
             reach = dist + 20.0 if r[2] >= 0 else min(dist + 20.0, eye[2] / -r[2])  # through the target; stop at the ground
             open_rays += not blocked(obstacle_set, eye, eye + r * (reach + 3.0), steps=16)
         score = float(np.minimum(px, 60).sum()) * (0.25 + 0.75 * open_rays / len(rays))
-        if best is None or score > best[0]:
-            best = (score, eye)
+        # never frame the void past the square: fewest leaking rays first, then the best people shot
+        rank = (frame_leaks(obstacle_set, eye, fwd, half_h, half_v), -score)
+        if best is None or rank < best[0]:
+            best = (rank, eye)
     if best is None:  # every direction blocked: straight down from above the target
-        return 0.0, (float(tx), float(ty) + 1e-3, height + dist), (float(tx), float(ty), aim_z), focal
+        return (0, 0.0), (float(tx), float(ty) + 1e-3, height + dist), (float(tx), float(ty), aim_z), focal
     return best[0], tuple(map(float, best[1])), tuple(map(float, aim)), focal
 
 
@@ -514,7 +531,7 @@ def write_run_layer(agents_dir, report, out_path):
                "ProblemZone": hotspots(walkers, (cx, cy), 110.0) or [(cx, cy)]}
     cameras = {}
     for name, candidates in targets.items():
-        score, eye, aim, focal = max(
+        _, eye, aim, focal = min(
             (place_camera(obstacle_set, walkers, t, SHOTS[name], keep_inside=name == "Street") for t in candidates),
             key=lambda shot: shot[0])
         look_at_camera(stage, name, eye, aim, focal)

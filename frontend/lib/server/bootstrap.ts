@@ -65,7 +65,8 @@ async function loadData(runId?: string): Promise<Omit<Bootstrap, "analyticsUrl">
       fixtures.modelCard(),
       fixtures.streamConfig(),
     ]);
-    const run = runId ? await resolveRun(runId) : await recordedRun();
+    // A run id this dev server no longer holds (e.g. after a restart) falls back to the recorded run.
+    const run = (runId ? await resolveRun(runId) : null) ?? (await recordedRun());
     return { health, scenarios, modelCard, streamConfig, run, upstreamError: null };
   }
 
@@ -75,7 +76,9 @@ async function loadData(runId?: string): Promise<Omit<Bootstrap, "analyticsUrl">
         cache: "no-store",
         signal: AbortSignal.timeout(15_000),
       });
-      if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+      if (!response.ok) {
+        throw Object.assign(new Error(`${path} returned ${response.status}`), { status: response.status });
+      }
       return (await response.json()) as T;
     };
 
@@ -87,7 +90,10 @@ async function loadData(runId?: string): Promise<Omit<Bootstrap, "analyticsUrl">
     ]);
     // An unknown or expired run id (the API keeps runs in memory) is not a backend outage.
     const run = runId
-      ? await get<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`).catch(() => null)
+      ? await get<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`).catch((error: unknown) => {
+          if ((error as { status?: number }).status === 404) return null;
+          throw error;
+        })
       : null;
     return { health, scenarios, modelCard, streamConfig, run, upstreamError: null };
   } catch (error) {

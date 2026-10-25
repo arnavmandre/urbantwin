@@ -342,7 +342,7 @@ $feLines = @(
     ("Set-Location -LiteralPath '{0}'" -f $FrontendDir)
     '$env:URBANTWIN_API_BASE = ''http://127.0.0.1:8000'''
     $(if ($AnalyticsUrl) { "`$env:URBANTWIN_GRAFANA_URL = '$AnalyticsUrl'" } else { '# analytics not running' })
-    '$Host.UI.RawUI.WindowTitle = ''Argus AI Dashboard'''
+    '$Host.UI.RawUI.WindowTitle = ''UrbanTwin AI Dashboard'''
     ("npm run dev -- -p {1} 2>&1 | Tee-Object -FilePath '{0}'" -f $FrontendLog, $DashboardPort)
 )
 $feLines | Set-Content -LiteralPath $FrontendScript -Encoding ASCII
@@ -393,7 +393,7 @@ while ((Get-Date) -lt $deadline) {
 }
 if (-not $dashboard) {
     $dashboard = "http://127.0.0.1:$DashboardPort"
-    Write-Warning ("Dashboard not confirmed yet - check the 'Argus AI Dashboard' window or {0} for the port npm chose." -f $FrontendLog)
+    Write-Warning ("Dashboard not confirmed yet - check the 'UrbanTwin AI Dashboard' window or {0}; port {1} may be held by another program." -f $FrontendLog, $DashboardPort)
 }
 
 Write-Host ""

@@ -15,7 +15,7 @@ report and warns that no simulator process ran for the submitted scenario.
 ```powershell
 cd C:\Users\arnav\Argus\frontend
 npm install
-npm run dev            # http://localhost:3000  (mock mode)
+npm run dev            # http://localhost:3000  (mock mode; use -- -p 3001 while Kit runs: its debugger takes 3000)
 
 # live mode (second shell: python -m api --host 127.0.0.1 --port 8000)
 $env:URBANTWIN_API_BASE = "http://127.0.0.1:8000"
