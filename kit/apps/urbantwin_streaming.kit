@@ -1,0 +1,154 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+#
+# NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+# property and proprietary rights in and to this material, related
+# documentation and any modifications thereto. Any use, reproduction,
+# disclosure or distribution of this material and related documentation
+# without an express license agreement from NVIDIA CORPORATION or
+# its affiliates is strictly prohibited.
+
+[package]
+title = "UrbanTwin AI Streaming"
+version = "0.1.0"
+description = "Streaming layer for the UrbanTwin AI Kit application (local WebRTC)."
+keywords = ["experience", "app", "dev", "streaming"]
+template_name = "omni.streaming_configuration"
+
+[dependencies]
+"urbantwin" = {}  # Desktop base editor application
+"omni.kit.livestream.app" = {}  # Kit App Streaming / WebRTC
+"omni.kit.livestream.messaging" = {}  # Inbound WebRTC data-channel messages -> carb events.
+# Stage open + view commands: enabled at launch via --ext-folder + --enable
+# urbantwin.stage_autoload / urbantwin.view_commands (unbuilt source exts stay
+# off the dependency lock).
+
+[settings.app]
+fastShutdown = true
+name = "UrbanTwin AI Streaming"
+# 720p30 instead of 1080p60. Pixel throughput drops to ~22% of the original
+# (0.44x the pixels, 0.5x the frames), which is the single biggest win on a
+# laptop GPU that was pinned at 100% and 78 C.
+renderer.resolution.height = 720
+renderer.resolution.width = 1280
+window.height = 720
+window.width = 1280
+# Stage path is supplied at launch via --/app/auto_load_usd so this file stays
+# machine-portable. Example:
+#   --/app/auto_load_usd=C:/Users/arnav/Argus/phase9/scene/main.usda
+
+[settings]
+rtx.post.aa.op = 3
+rtx.verifyDriverVersion.enabled = false
+app.livestream.allowResize = 1
+app.livestream.skipCapture = 1
+
+# omni.kit.livestream.app defaults every run loop to 60 Hz and Kit re-renders
+# continuously even when the scene is idle. Halving these caps the whole
+# render/encode pipeline at 30 fps, which is plenty for a streamed viewport.
+app.runLoops.main.rateLimitEnabled = true
+app.runLoops.main.rateLimitFrequency = 30
+app.runLoops.present.rateLimitEnabled = true
+app.runLoops.present.rateLimitFrequency = 30
+app.runLoops.rendering_0.rateLimitEnabled = true
+app.runLoops.rendering_0.rateLimitFrequency = 30
+app.runLoops.rendering_1.rateLimitEnabled = true
+app.runLoops.rendering_1.rateLimitFrequency = 30
+
+# Idle scenes should not burn frames. Kit still streams; it just stops
+# re-rendering identical pixels as aggressively.
+app.renderer.skipWhileMinimized = true
+app.renderer.sleepMsOnFocus = 0
+app.renderer.sleepMsOutOfFocus = 10
+
+# DLSS Frame Generation multiplies whatever the viewport ticks at, which pushed
+# the HUD to 240 fps (120 Hz tick x2) past every cap. NVIDIA's own streaming
+# viewer template disables it for exactly this reason.
+rtx-transient.dlssg.enabled = false
+
+# Clean stream: the viewport should fill the frame with no editor furniture.
+# (Per-window values saved in the user config override these defaults; the
+# urbantwin.stage_autoload extension re-forces them at runtime.)
+app.viewport.forceHideFps = true
+app.viewport.defaults.fillViewport = true
+app.viewport.defaults.hud.visible = false
+app.viewport.defaults.hud.renderFPS.visible = false
+app.viewport.defaults.hud.renderResolution.visible = false
+app.viewport.defaults.hud.renderProgress.visible = false
+app.viewport.defaults.hud.deviceMemory.visible = false
+app.viewport.defaults.hud.hostMemory.visible = false
+app.viewport.defaults.hud.cameraSpeed.visible = false
+app.viewport.defaults.hud.toastMessage.visible = false
+app.viewport.defaults.guide.grid.visible = false
+app.viewport.defaults.guide.axis.visible = false
+app.viewport.defaults.scene.cameras.visible = false
+app.viewport.defaults.scene.lights.visible = false
+
+[settings.persistent]
+app.viewport.noPadding = true
+metricsAssembler.showUnitsOverlay = false
+
+[settings.app.extensions]
+registryEnabled = true
+supportedTargets.platform = []
+
+exclude = [
+    "omni.kit.developer.bundle",
+    "omni.kit.widget.cache_indicator",
+]
+
+[settings.app.exts]
+folders.'++' = [
+    "${app}/../exts",
+    "${app}/../apps",
+    "${app}/../extscache"
+]
+
+[settings.app.file]
+ignoreUnsavedOnExit = true
+
+
+########################################################################################################################
+# BEGIN GENERATED PART (Remove from 'BEGIN' to 'END' to regenerate)
+########################################################################################################################
+
+# Kit SDK Version: 110.3.0+feature.371399.00c488ae.gl
+
+# Version lock for all dependencies:
+[settings.app.exts]
+enabled = [
+	"omni.anim.curve.core-1.6.1",
+	"omni.convexdecomposition-110.3.2",
+	"omni.graph.action-2.10.2",
+	"omni.graph.action_nodes-2.11.0",
+	"omni.graph.action_nodes_core-2.11.0",
+	"omni.graph.nodes-2.12.0",
+	"omni.graph.nodes_core-2.11.0",
+	"omni.graph.scriptnode-2.10.2",
+	"omni.graph.ui_nodes-2.11.1",
+	"omni.kit.asset_converter-6.0.5",
+	"omni.kit.debug.settings-1.0.3",
+	"omni.kit.dev.utilities.bundle-0.2.1",
+	"omni.kit.developer.bundle-0.2.0",
+	"omni.kit.livestream.app-10.3.1",
+	"omni.kit.livestream.core-10.4.0",
+	"omni.kit.livestream.webrtc-10.7.0",
+	"omni.kit.tool.asset_importer-6.0.2",
+	"omni.kit.viewport.menubar.lighting-107.3.4",
+	"omni.physx-110.3.2",
+	"omni.physx.cooking-110.3.2",
+	"omni.physx.foundation-110.3.2",
+	"omni.physx.gpu-110.3.2",
+	"omni.physx.stageupdate-110.3.2",
+	"omni.usd.metrics.assembler-110.1.2",
+	"omni.usd.metrics.assembler.ui-110.1.1",
+	"omni.usd.schema.metrics.assembler-110.1.0",
+	"omni.usd.schema.newton-1.4.0",
+	"omni.usd.schema.physx-110.3.2",
+	"omni.usdphysics-110.3.2",
+	"omni.warp.core-1.16.0",
+]
+
+########################################################################################################################
+# END GENERATED PART
+########################################################################################################################

@@ -1,0 +1,11 @@
+[package]
+title = "UrbanTwin Stage Autoload"
+version = "0.1.0"
+description = "Opens /app/auto_load_usd on startup for UrbanTwin streaming Kit."
+category = "UrbanTwin"
+keywords = ["urbantwin", "usd", "autoload"]
+
+[dependencies]
+
+[[python.module]]
+name = "urbantwin.stage_autoload"

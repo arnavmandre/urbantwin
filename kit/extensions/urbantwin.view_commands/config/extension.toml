@@ -1,0 +1,25 @@
+[package]
+
+title = "UrbanTwin View Commands"
+
+version = "0.1.0"
+
+description = "Apply allow-listed dashboard view commands from WebRTC messaging."
+
+category = "UrbanTwin"
+
+keywords = ["urbantwin", "livestream", "viewport"]
+
+
+
+[dependencies]
+
+"omni.kit.livestream.messaging" = {}  # Guarantees this loads AFTER messaging is
+                                       # enabled, instead of racing a soft import.
+
+
+
+[[python.module]]
+
+name = "urbantwin.view_commands"
+

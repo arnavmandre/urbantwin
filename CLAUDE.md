@@ -47,7 +47,7 @@ trust the viewport chip, not the header. View commands: API allow-list, then
 WebRTC `sendMessage` to Kit (`docs/PHASE15_KIT_COMMAND_DELIVERY.md`). **`delivered:
 true` only means the browser's send resolved, not that Kit applied it.**
 
-**The Kit half is NOT in this repo.** It lives in
+**The Kit half runs outside this repo** (a copy is mirrored in `kit/`, see `kit/README.md`; keep it in sync). It lives in
 `C:\Users\arnav\omniverse\kit-app-template` (branch `phase13-streaming-kit`): the
 `omni.kit.livestream.messaging` dependency, the `urbantwin.view_commands` handler,
 the `urbantwin.stage_autoload` clean-view extension, and the GPU settings. Without
