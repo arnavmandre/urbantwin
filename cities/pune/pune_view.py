@@ -310,8 +310,8 @@ def look_at_camera(stage, name, eye, target, focal_mm, up=(0, 0, 1)):
 # Kit/USD default horizontal aperture (mm) and the stream width, for on-screen person size.
 APERTURE_MM, STREAM_PX, PERSON_M = 20.955, 1280, 1.7
 # name: (distance from target m, eye height m, focal mm, aim height m). Sized so a person is roughly
-# 20 px (Overview), 35 px (ProblemZone) and 90 px (Street) tall at the target on the 1280 px stream.
-SHOTS = {"Overview": (135.0, 70.0, 24.0, 0.0),
+# 13 px (Overview), 35 px (ProblemZone) and 90 px (Street) tall at the target on the 1280 px stream.
+SHOTS = {"Overview": (200.0, 110.0, 24.0, 0.0),
          "ProblemZone": (55.0, 32.0, 28.0, 0.0),
          "Street": (24.0, 2.4, 24.0, 1.1)}
 
