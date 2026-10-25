@@ -35,7 +35,7 @@ View commands are allow-listed by the API; **Kit must be running and the browser
 
 ## Launch (recommended)
 
-Open three terminals. Do **not** rely on `Start-Argus.bat` for demos.
+Open three terminals. Do **not** rely on `Start-UrbanTwin.bat` for demos.
 
 ```powershell
 # 1) API

@@ -99,7 +99,7 @@ Full operator notes: [`docs/DEMO_RUNBOOK.md`](docs/DEMO_RUNBOOK.md).
 
 ## Optional: one-click launcher
 
-`Start-Argus.bat` / `tools/demo_launch.ps1` exist but are **not** the preferred path (Kit port conflicts are common). Prefer the manual steps above and open **http://localhost:3000/**.
+`Start-UrbanTwin.bat` / `tools/demo_launch.ps1` exist but are **not** the preferred path (Kit port conflicts are common). Prefer the manual steps above and open **http://localhost:3000/**.
 
 ### Mock-only dashboard (no API / no Kit)
 
@@ -140,7 +140,7 @@ Scenario sliders do **not** live-update the USD stage — they apply on the next
 | 14 | Browser WebRTC client (`@nvidia/ov-web-rtc`) + stream TCP probe. |
 | 15 | Allow-listed view commands → WebRTC → Kit `urbantwin.view_commands` (camera, overlay, before/after, playback). |
 | 16 | Constrained explain endpoint (deterministic by default). |
-| 17 | Runbook (`docs/DEMO_RUNBOOK.md`) + optional launcher (`Start-Argus.bat`, `tools/demo_launch.ps1`). |
+| 17 | Runbook (`docs/DEMO_RUNBOOK.md`) + optional launcher (`Start-UrbanTwin.bat`, `tools/demo_launch.ps1`). |
 | RAG | Optional grounded advisor over completed runs (`docs/RAG_URBAN_ADVISOR.md`). |
 
 ### Simulator advisor (no LLM required)
@@ -208,7 +208,7 @@ Health, stream config, short live run, view allow-list, optional explain.
 
 ### Manual streaming check
 
-1. Start API, Kit and frontend with the manual steps above (`Start-Argus.bat` is optional).
+1. Start API, Kit and frontend with the manual steps above (`Start-UrbanTwin.bat` is optional).
 2. Header: **Live backend**; `/api/stream/config` → `available` when Kit is up.
 3. Viewport chip: **Live** (not only “stream online” in the header).
 4. Change Camera / Overlay / Play–Pause; Kit should respond when WebRTC is connected.

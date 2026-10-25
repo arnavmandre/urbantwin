@@ -5,7 +5,7 @@
 #   .\tools\demo_launch.ps1 -NoAnalytics    # skip Grafana + run importer
 #   .\tools\demo_launch.ps1 -Inspector      # also open a desktop Kit editor on the stage
 #   .\tools\demo_launch.ps1 -City pune      # stream the Pune 400 m view
-#   .\Start-Argus.bat                       # double-click from Explorer
+#   .\Start-UrbanTwin.bat                       # double-click from Explorer
 param(
     [switch]$Force,
     [switch]$NoBrowser,
@@ -150,10 +150,10 @@ function Start-DemoWindow {
 }
 
 function Resolve-DashboardUrl {
-    # Next falls back to 3001/3002 when 3000 is taken, so only accept a port
-    # whose listener is a Next process started from this repo's frontend.
+    # Kit's Python debugger binds 127.0.0.1:3000, so the dashboard is pinned to
+    # $DashboardPort. Only accept a listener that is this repo's Next process.
     param([string]$FrontendDir)
-    foreach ($port in 3000, 3001, 3002) {
+    foreach ($port in @($DashboardPort)) {
         foreach ($procId in Get-PortListenerIds -Port $port) {
             $info = Get-ProcessInfo -ProcessId $procId
             if (Test-ProcessMatches -Info $info -Name "node" -CommandLike ("*{0}*" -f $FrontendDir)) {
@@ -172,6 +172,7 @@ $Stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $ApiLog = Join-Path $LogDir ("api-{0}.log" -f $Stamp)
 $FrontendLog = Join-Path $LogDir ("frontend-{0}.log" -f $Stamp)
 $KitLog = Join-Path $LogDir ("kit-{0}.log" -f $Stamp)
+$DashboardPort = 3001
 $KitBat = "C:\Users\arnav\omniverse\kit-app-template\launch_urbantwin_streaming.bat"
 $KitRoot = "C:\Users\arnav\omniverse\kit-app-template"
 $InspectorBat = Join-Path $KitRoot "launch_urbantwin_inspector.bat"
@@ -237,7 +238,7 @@ if ($Force) {
     if ($existingKit -or $sigBusy) {
         Write-Warning "Kit or port 49100 is already in use."
         Write-Warning "That usually breaks WebRTC with: Failed to start the primary stream server."
-        Write-Warning "Re-run with: Start-Argus.bat -Force (stops only the streaming Kit and"
+        Write-Warning "Re-run with: Start-UrbanTwin.bat -Force (stops only the streaming Kit and"
         Write-Warning "demo API/Next processes; a desktop Omniverse editor must be closed by hand)."
         Write-Host ""
     }
@@ -342,7 +343,7 @@ $feLines = @(
     '$env:URBANTWIN_API_BASE = ''http://127.0.0.1:8000'''
     $(if ($AnalyticsUrl) { "`$env:URBANTWIN_GRAFANA_URL = '$AnalyticsUrl'" } else { '# analytics not running' })
     '$Host.UI.RawUI.WindowTitle = ''Argus AI Dashboard'''
-    ("npm run dev 2>&1 | Tee-Object -FilePath '{0}'" -f $FrontendLog)
+    ("npm run dev -- -p {1} 2>&1 | Tee-Object -FilePath '{0}'" -f $FrontendLog, $DashboardPort)
 )
 $feLines | Set-Content -LiteralPath $FrontendScript -Encoding ASCII
 
@@ -391,7 +392,7 @@ while ((Get-Date) -lt $deadline) {
     Start-Sleep -Seconds 2
 }
 if (-not $dashboard) {
-    $dashboard = "http://127.0.0.1:3000"
+    $dashboard = "http://127.0.0.1:$DashboardPort"
     Write-Warning ("Dashboard not confirmed yet - check the 'Argus AI Dashboard' window or {0} for the port npm chose." -f $FrontendLog)
 }
 
