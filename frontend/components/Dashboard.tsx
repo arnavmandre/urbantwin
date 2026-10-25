@@ -77,6 +77,10 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
 
   const onComplete = useCallback((summary: RunSummary) => {
     setRun(summary);
+    // Keep the run on reload: the server page reads ?run= back.
+    const url = new URL(window.location.href);
+    url.searchParams.set("run", summary.run_id);
+    window.history.replaceState(null, "", url);
     if (revealImpactAfterRun.current) {
       revealImpactAfterRun.current = false;
       setState("after");
@@ -330,7 +334,7 @@ export function Dashboard({ bootstrap }: { bootstrap: Bootstrap }) {
               </ResultsSection>
 
               {health.mode === "live" && run.status === "complete" ? (
-                <ResultsSection title="AI advisor">
+                <ResultsSection title="AI advisor" open>
                   {/* not keyed by run: the conversation continues across Apply & re-run */}
                   <AdvisorChat
                     runId={run.run_id}

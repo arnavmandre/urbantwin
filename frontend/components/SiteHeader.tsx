@@ -62,9 +62,9 @@ export function SiteHeader({
         <div className="flex min-w-0 items-center gap-2.5">
           <Mark />
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-[14px] font-semibold tracking-[-0.02em] text-ink">
-              Argus AI
-            </p>
+            <h1 className="truncate text-[14px] font-semibold tracking-[-0.02em] text-ink">
+              UrbanTwin AI
+            </h1>
             <p className="hidden truncate text-[11px] text-ink-3 lg:block">
               Simulate the human experience before building the city
             </p>

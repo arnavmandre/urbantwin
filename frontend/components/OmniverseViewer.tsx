@@ -327,7 +327,7 @@ export function OmniverseViewer({
               >
                 {VIEW_CAMERAS.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {CAMERA_LABEL[option]}
                   </option>
                 ))}
               </select>
@@ -452,16 +452,22 @@ function ViewerStatePanel({
       <p className="mt-2 text-[15px] font-semibold tracking-[-0.015em] text-ink">
         No live RTX stream is connected
       </p>
-      <p className="mt-2 text-[13px] leading-relaxed text-ink-2">{viewer.message}</p>
-      {viewer.detail.length > 0 ? (
-        <ul className="mt-3 space-y-1 text-left">
-          {viewer.detail.map((line) => (
-            <li key={line} className="text-[12px] leading-relaxed text-ink-3">
-              {line}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {failed ? (
+        <>
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
+            The stream did not start. Retry; if it fails again, restart Kit. The
+            results do not depend on the stream.
+          </p>
+          <details className="mt-3 text-left">
+            <summary className="cursor-pointer text-[12px] font-semibold text-ink-2">
+              Technical details
+            </summary>
+            <ViewerMessage viewer={viewer} />
+          </details>
+        </>
+      ) : (
+        <ViewerMessage viewer={viewer} />
+      )}
       <div className="mt-4 flex items-center justify-center gap-2">
         <button
           type="button"
@@ -473,6 +479,30 @@ function ViewerStatePanel({
         <span className="text-[11px] text-ink-3">via {adapterName}</span>
       </div>
     </div>
+  );
+}
+
+const CAMERA_LABEL: Record<ViewCamera, string> = {
+  Overview: "Overview",
+  Street: "Street",
+  ProblemZone: "Problem zone",
+  Aerial: "Aerial",
+};
+
+function ViewerMessage({ viewer }: { viewer: ViewerState }) {
+  return (
+    <>
+      <p className="mt-2 text-[13px] leading-relaxed text-ink-2">{viewer.message}</p>
+      {viewer.detail.length > 0 ? (
+        <ul className="mt-3 space-y-1 text-left">
+          {viewer.detail.map((line) => (
+            <li key={line} className="text-[12px] leading-relaxed text-ink-3">
+              {line}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
   );
 }
 

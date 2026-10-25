@@ -160,8 +160,10 @@ export function deltaPolarity(key: MetricKey, delta: number): DeltaPolarity {
 
 export function formatDelta(key: MetricKey, delta: number): string {
   const decimals = key === "mean_travel_minutes" ? 2 : 1;
-  const sign = delta > 0 ? "+" : delta < 0 ? "\u2212" : "\u00b1";
-  return `${sign}${Math.abs(delta).toFixed(decimals)}`;
+  const magnitude = Math.abs(delta).toFixed(decimals);
+  // A change that rounds to zero is shown as \u00b10.0, never \u22120.0.
+  const sign = Number(magnitude) === 0 ? "\u00b1" : delta > 0 ? "+" : "\u2212";
+  return `${sign}${magnitude}`;
 }
 
 export function directionLabel(key: MetricKey): string {

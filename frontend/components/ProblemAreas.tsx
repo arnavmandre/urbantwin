@@ -65,7 +65,7 @@ export function ProblemAreas({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-medium text-ink">
-                      {building.name}
+                      {displayName(building)}
                     </p>
                     <p className="text-[11px] text-ink-3">
                       {building.zone} &middot;{" "}
@@ -170,6 +170,14 @@ function Empty({ children }: { children: React.ReactNode }) {
       {children}
     </li>
   );
+}
+
+/** OSM buildings without a name tag arrive named by their id; the id stays in the line below. */
+function displayName(building: { id: string; name: string }) {
+  const name = building.name?.trim();
+  return name && name !== building.id && !/^(way|node|relation)_\d+$/.test(name)
+    ? name
+    : "Unnamed building";
 }
 
 function severityTone(severity: number) {

@@ -3,7 +3,7 @@
 import { Card, CardHeader } from "@/components/ui/Card";
 import { DeltaPill } from "@/components/ui/DeltaPill";
 import { Pill } from "@/components/ui/Pill";
-import { METRIC_META, formatDelta, formatMetric } from "@/lib/metric-format";
+import { METRIC_META, deltaPolarity, formatMetric } from "@/lib/metric-format";
 import type { InterventionParameters, MetricKey, SimulationMetrics } from "@/lib/types";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -11,6 +11,9 @@ const ACTION_LABEL: Record<string, string> = {
   drainage_boost: "drainage",
   route_capacity_boost: "pedestrian routes",
 };
+
+const TONE = { improvement: "positive", regression: "negative", unchanged: "neutral" } as const;
+const VERDICT = { improvement: "Improved", regression: "Worsened", unchanged: "No change" } as const;
 
 const SUPPORTING_METRICS: MetricKey[] = [
   "comfort",
@@ -34,6 +37,7 @@ export function AdvisorImpactSummary({
     .filter((key) => typeof intervention[key as keyof InterventionParameters] === "number")
     .map((key) => ACTION_LABEL[key] ?? key);
   const indexDelta = after.human_experience_index - before.human_experience_index;
+  const polarity = deltaPolarity("human_experience_index", indexDelta);
 
   if (actions.length === 0) {
     return null;
@@ -43,11 +47,11 @@ export function AdvisorImpactSummary({
     <Card className="border-accent-line bg-accent-soft">
       <CardHeader
         eyebrow="Measured intervention result"
-        title="What the selected AI advice changed"
-        description={`The simulator re-ran the city with ${actions.join(" and ")} implemented. These are calculated results, not claims from the LLM.`}
+        title="What the intervention changed"
+        description={`The simulator re-ran the same citizens with ${actions.join(" and ")} implemented. These are calculated results, not claims from the AI advisor.`}
         actions={
-          <Pill tone={indexDelta > 0 ? "positive" : indexDelta < 0 ? "negative" : "neutral"}>
-            {indexDelta > 0 ? "Improved" : indexDelta < 0 ? "Worsened" : "No change"}
+          <Pill tone={TONE[polarity]}>
+            {VERDICT[polarity]}
           </Pill>
         }
       />
@@ -61,12 +65,10 @@ export function AdvisorImpactSummary({
             {formatMetric("human_experience_index", before.human_experience_index)}
           </span>
           <span className="text-ink-4">→</span>
-          <span className="tabular text-2xl font-semibold text-accent">
+          <span className="tabular text-2xl font-semibold text-ink">
             {formatMetric("human_experience_index", after.human_experience_index)}
           </span>
-          <span className="tabular text-[13px] font-semibold text-accent">
-            {formatDelta("human_experience_index", indexDelta)}
-          </span>
+          <DeltaPill metricKey="human_experience_index" delta={indexDelta} />
         </div>
       </div>
 

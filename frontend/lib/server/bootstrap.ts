@@ -85,7 +85,10 @@ async function loadData(runId?: string): Promise<Omit<Bootstrap, "analyticsUrl">
       get<ModelCard>("/api/model-card"),
       get<StreamConfig>("/api/stream/config"),
     ]);
-    const run = runId ? await get<RunSummary>(`/api/runs/${runId}`) : null;
+    // An unknown or expired run id (the API keeps runs in memory) is not a backend outage.
+    const run = runId
+      ? await get<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`).catch(() => null)
+      : null;
     return { health, scenarios, modelCard, streamConfig, run, upstreamError: null };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "unknown error";

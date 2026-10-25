@@ -71,7 +71,7 @@ export function Disclosures({
           <p className="mt-2 text-[12px] leading-relaxed text-ink-2">
             {health.mode === "mock"
               ? "This deployment is serving recorded fixtures exported from a real simulator run. No HTTP backend, job queue or run database exists yet."
-              : "This deployment is reading from the configured Argus AI backend."}
+              : "This deployment is reading from the configured UrbanTwin AI backend."}
           </p>
           {stage ? (
             <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink-3">

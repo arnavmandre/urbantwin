@@ -27,17 +27,18 @@
   --ink-3: #6e6e73;
   --ink-4: #85858a;
 
-  --accent: #0b7d72;
-  --accent-hover: #096a61;
+  /* Text tokens are darkened so they clear 4.5:1 on their own soft tints. */
+  --accent: #0a7268;
+  --accent-hover: #085e56;
   --accent-ink: #ffffff;
   --accent-soft: rgba(11, 125, 114, 0.1);
   --accent-line: rgba(11, 125, 114, 0.28);
 
-  --positive: #157f4e;
+  --positive: #11703f;
   --positive-soft: rgba(21, 127, 78, 0.1);
   --negative: #c0392b;
   --negative-soft: rgba(192, 57, 43, 0.1);
-  --caution: #a96a00;
+  --caution: #875400;
   --caution-soft: rgba(169, 106, 0, 0.12);
   --neutral-soft: rgba(0, 0, 0, 0.05);
 

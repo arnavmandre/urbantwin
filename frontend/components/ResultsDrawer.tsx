@@ -103,7 +103,7 @@ export function ResultsDrawer({
               const polarity = delta === null ? null : deltaPolarity(key, delta);
               return (
                 <div key={key} className={cx("shrink-0", index > 1 && "hidden lg:block")}>
-                  <dt className="text-[10.5px] font-medium text-ink-3">
+                  <dt className="text-[11px] font-medium text-ink-3">
                     {METRIC_META[key].label}
                   </dt>
                   <dd className="flex items-baseline gap-1.5">
@@ -113,7 +113,7 @@ export function ResultsDrawer({
                     {delta !== null && polarity ? (
                       <span
                         className={cx(
-                          "tabular text-[10.5px] font-semibold",
+                          "tabular text-[11px] font-semibold",
                           polarity === "improvement"
                             ? "text-positive"
                             : polarity === "regression"
@@ -172,7 +172,7 @@ export function ResultsDrawer({
                 ]}
               />
               {!hasAfter ? (
-                <span className="mt-0.5 text-[10px] text-ink-3">No intervention arm</span>
+                <span className="mt-0.5 text-[11px] text-ink-3">No intervention arm</span>
               ) : null}
             </div>
           ) : null}

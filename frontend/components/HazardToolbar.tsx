@@ -146,7 +146,7 @@ export function HazardToolbar({
               {hazard.support !== "layer" ? (
                 <span
                   className={cx(
-                    "hidden rounded-full px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[0.04em] md:inline",
+                    "hidden rounded-full px-1.5 py-px text-[11px] font-semibold uppercase tracking-[0.04em] md:inline",
                     planned ? "bg-neutral-soft text-ink-3" : "bg-caution-soft text-caution",
                   )}
                 >
@@ -244,7 +244,7 @@ function HeatLegend() {
   return (
     <div className="mt-2">
       <div className="h-2 w-full rounded-full" style={{ background: HEAT_RAMP }} />
-      <div className="mt-1 flex justify-between text-[10.5px] text-ink-3">
+      <div className="mt-1 flex justify-between text-[11px] text-ink-3">
         <span>Calm</span>
         <span>Noticeable</span>
         <span>Bad</span>
